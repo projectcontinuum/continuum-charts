@@ -1,0 +1,23 @@
+{{- if and .Values.featureBase.enabled .Values.featureBase.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "continuum-platform.feature-base.fullname" . }}
+  labels:
+    app.kubernetes.io/component: feature-base
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "continuum-platform.feature-base.fullname" . }}
+  minReplicas: {{ .Values.featureBase.autoscaling.minReplicas | default 1 }}
+  maxReplicas: {{ .Values.featureBase.autoscaling.maxReplicas | default 5 }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.featureBase.autoscaling.targetCPUUtilizationPercentage | default 75 }}
+{{- end }}

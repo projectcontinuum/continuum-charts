@@ -1,0 +1,45 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "continuum-platform.fullname" . }}
+  labels:
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    {{- if and .Values.workbench.enabled .Values.ingress.hosts.workbench }}
+    - host: {{ .Values.ingress.hosts.workbench.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.hosts.workbench.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "continuum-platform.workbench.fullname" . }}
+                port:
+                  number: {{ .Values.workbench.service.port | default 8080 }}
+    {{- end }}
+    {{- if and .Values.apiServer.enabled .Values.ingress.hosts.apiServer }}
+    - host: {{ .Values.ingress.hosts.apiServer.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.hosts.apiServer.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "continuum-platform.api-server.fullname" . }}
+                port:
+                  number: {{ .Values.apiServer.service.port | default 8080 }}
+    {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

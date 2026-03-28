@@ -1,0 +1,18 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "continuum-infra.postgresql.fullname" . }}-init
+  labels:
+    app.kubernetes.io/component: postgresql
+    {{- include "continuum-infra.labels" . | nindent 4 }}
+data:
+  init-continuum-db.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+        CREATE USER ${CONTINUUM_DB_USER} WITH PASSWORD '${CONTINUUM_DB_PASSWORD}';
+        CREATE DATABASE ${CONTINUUM_DB_NAME} OWNER ${CONTINUUM_DB_USER};
+        GRANT ALL PRIVILEGES ON DATABASE ${CONTINUUM_DB_NAME} TO ${CONTINUUM_DB_USER};
+    EOSQL
+{{- end }}

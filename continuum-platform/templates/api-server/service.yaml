@@ -1,0 +1,19 @@
+{{- if .Values.apiServer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "continuum-platform.api-server.fullname" . }}
+  labels:
+    app.kubernetes.io/component: api-server
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.apiServer.service.port | default 8080 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/component: api-server
+    {{- include "continuum-platform.selectorLabels" . | nindent 4 }}
+{{- end }}

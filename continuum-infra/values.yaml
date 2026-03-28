@@ -1,0 +1,527 @@
+# =============================================================================
+# Project Continuum — Infrastructure Helm Values
+# =============================================================================
+# Default values for the continuum-infra chart.
+# This chart deploys the shared infrastructure layer:
+#   - PostgreSQL          (application database)
+#   - Cassandra           (Temporal persistence store — Bitnami subchart)
+#   - Elasticsearch       (Temporal visibility store — Bitnami subchart)
+#   - Temporal            (workflow orchestration — official subchart)
+#   - Kafka (KRaft)       (event streaming)
+#   - Schema Registry     (Avro / JSON-Schema management for Kafka)
+#   - Kafka UI            (browser-based Kafka inspection)
+#   - Mosquitto           (lightweight MQTT broker)
+#   - MinIO               (S3-compatible object storage)
+#
+# Override per-environment with values-<env>.yaml (e.g. values-dev.yaml).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global settings shared across all sub-charts and templates
+# -----------------------------------------------------------------------------
+global:
+  # StorageClass to use for all PVCs.  Leave empty to use the cluster default.
+  storageClass: ""
+
+  # Default pull policy for every container image in this chart.
+  imagePullPolicy: IfNotPresent
+
+  # References to Kubernetes Secrets that contain private-registry credentials.
+  # Example:
+  #   imagePullSecrets:
+  #     - name: my-registry-secret
+  imagePullSecrets: []
+
+# =============================================================================
+# PostgreSQL — application database
+# =============================================================================
+# A simple single-instance PostgreSQL deployment managed by this chart's own
+# templates (not a subchart).  Suitable for development and small production
+# workloads.  For HA production, consider replacing with CloudNativePG or a
+# managed service and setting enabled: false.
+# -----------------------------------------------------------------------------
+postgresql:
+  enabled: true
+
+  image:
+    repository: postgres
+    tag: "16"
+    # pullPolicy inherits from global.imagePullPolicy unless overridden here.
+
+  # ---- Authentication -------------------------------------------------------
+  auth:
+    # Superuser credentials
+    postgresUser: postgres
+    # Leave empty here and supply via --set or a Secret in production.
+    postgresPassword: ""
+
+    # Application-level user & database created by the init scripts.
+    continuumUser: continuum_owner
+    continuumPassword: ""
+    continuumDatabase: continuum
+
+    # If set, the chart will use this existing Secret instead of creating one.
+    # The Secret must contain the keys: postgres-password, continuum-password.
+    existingSecret: ""
+
+  # ---- Persistence ----------------------------------------------------------
+  persistence:
+    # Size of the PVC for the data directory (/var/lib/postgresql/data).
+    size: 10Gi
+
+  # ---- Resources ------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # ---- Service --------------------------------------------------------------
+  service:
+    type: ClusterIP
+    port: 5432
+
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# =============================================================================
+# Cassandra — Temporal persistence backend  (Bitnami subchart)
+# =============================================================================
+# Values are passed through to the Bitnami Cassandra subchart.
+# See https://github.com/bitnami/charts/tree/main/bitnami/cassandra
+# for the full set of tunables.
+# -----------------------------------------------------------------------------
+cassandra:
+  enabled: true
+
+  # Number of Cassandra nodes.
+  replicaCount: 3
+
+  cluster:
+    # Datacenter name used in the Cassandra topology.
+    datacenter: dc1
+
+  # ---- Authentication -------------------------------------------------------
+  dbUser:
+    user: temporal
+    # Leave empty here; supply via --set or existingSecret in production.
+    password: ""
+    # Name of an existing Secret that contains the key `cassandra-password`.
+    existingSecret: ""
+
+  # ---- Persistence ----------------------------------------------------------
+  persistence:
+    enabled: true
+    size: 50Gi
+
+  # ---- Resources ------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+# =============================================================================
+# Elasticsearch — Temporal visibility backend  (Bitnami subchart)
+# =============================================================================
+# Values are passed through to the Bitnami Elasticsearch subchart.
+# See https://github.com/bitnami/charts/tree/main/bitnami/elasticsearch
+# for the full set of tunables.
+# -----------------------------------------------------------------------------
+elasticsearch:
+  enabled: true
+
+  # ---- Master nodes ---------------------------------------------------------
+  master:
+    replicaCount: 1
+    persistence:
+      size: 30Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+
+  # ---- Data nodes -----------------------------------------------------------
+  data:
+    replicaCount: 2
+    persistence:
+      size: 50Gi
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+
+  # ---- Coordinating nodes ---------------------------------------------------
+  coordinating:
+    replicaCount: 1
+
+# =============================================================================
+# Temporal — workflow orchestration engine  (official subchart)
+# =============================================================================
+# Values are passed through to the official Temporal Helm chart.
+# See https://github.com/temporalio/helm-charts for the full reference.
+# -----------------------------------------------------------------------------
+temporal:
+  enabled: true
+
+  # ---- Server configuration -------------------------------------------------
+  server:
+    config:
+      persistence:
+        defaultStore: default
+        visibilityStore: visibility
+        # Number of history shards.  Must be a power of 2.  Once set for a
+        # cluster this value CANNOT be changed without a full migration.
+        numHistoryShards: 512
+
+        # ---- Datastores ------------------------------------------------------
+        datastores:
+          # -- Default store (Cassandra) ---------------------------------------
+          default:
+            cassandra:
+              createDatabase: true
+              manageSchema: true
+              hosts: "continuum-infra-cassandra"
+              port: 9042
+              keyspace: temporal
+              user: temporal
+              existingSecret: continuum-infra-cassandra
+              secretKey: cassandra-password
+              consistency:
+                default:
+                  consistency: local_quorum
+                  serialConsistency: local_serial
+              replicationFactor: 3
+              datacenter: dc1
+
+          # -- Visibility store (Elasticsearch) --------------------------------
+          visibility:
+            elasticsearch:
+              manageSchema: true
+              version: v7
+              url:
+                scheme: http
+                host: "continuum-infra-elasticsearch:9200"
+              indices:
+                visibility: temporal_visibility_v1
+              closeIdleConnectionsInterval: 15s
+
+    # ---- Namespaces ---------------------------------------------------------
+    # Namespaces to create when the cluster is bootstrapped.
+    namespaces:
+      create: true
+      namespace:
+        - name: default
+          retention: 3d
+
+    # ---- Dynamic configuration ----------------------------------------------
+    dynamicConfig:
+      limit.maxIDLength:
+        - value: 255
+
+    # ---- Frontend service ---------------------------------------------------
+    frontend:
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+      podDisruptionBudget:
+        minAvailable: 1
+
+    # ---- History service ----------------------------------------------------
+    history:
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+      podDisruptionBudget:
+        minAvailable: 1
+
+    # ---- Matching service ---------------------------------------------------
+    matching:
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+      podDisruptionBudget:
+        minAvailable: 1
+
+    # ---- Worker service -----------------------------------------------------
+    worker:
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+      podDisruptionBudget:
+        minAvailable: 1
+
+  # ---- Admin tools (temporalio/admin-tools container) -----------------------
+  admintools:
+    enabled: true
+
+  # ---- Temporal Web UI ------------------------------------------------------
+  web:
+    enabled: true
+
+# =============================================================================
+# Temporal Search Attribute Initialization Job
+# =============================================================================
+# A one-shot Kubernetes Job that registers custom search attributes in the
+# Temporal visibility store so that workflows can be queried by
+# Continuum-specific fields.
+# -----------------------------------------------------------------------------
+temporalSearchInit:
+  enabled: true
+
+  image:
+    repository: temporalio/admin-tools
+    tag: "1.30.2"
+
+  # Number of retries before the Job is considered failed.
+  backoffLimit: 5
+
+  # Maximum wall-clock time the Job is allowed to run (seconds).
+  activeDeadlineSeconds: 600
+
+  # Custom search attributes to register.
+  # Supported types: Bool, Datetime, Double, Int, Keyword, Text
+  attributes:
+    - name: "Continuum:ExecutionStatus"
+      type: Int
+    - name: "Continuum:WorkflowFileName"
+      type: Keyword
+
+# =============================================================================
+# Kafka (KRaft mode — no ZooKeeper)
+# =============================================================================
+# A self-contained KRaft Kafka cluster deployed by this chart's own templates.
+# Each broker acts as both controller and broker.
+# -----------------------------------------------------------------------------
+kafka:
+  enabled: true
+
+  image:
+    repository: confluentinc/cp-kafka
+    tag: "7.7.1"
+
+  # Number of Kafka broker/controller pods.
+  replicas: 3
+
+  # A fixed KRaft cluster ID.  Changing this after initial deployment will
+  # require a full storage wipe.
+  clusterId: "ILFgVkHSQceRTtSEDPN7cQ"
+
+  # ---- Persistence ----------------------------------------------------------
+  persistence:
+    size: 20Gi
+
+  # ---- Resources ------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+  # ---- Broker configuration -------------------------------------------------
+  config:
+    # Allow brokers to auto-create topics on first produce/consume.
+    autoCreateTopics: "true"
+    # Default retention for topic log segments (hours).
+    logRetentionHours: 168
+
+  # ---- Availability ---------------------------------------------------------
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+  topologySpreadConstraints:
+    enabled: true
+    maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+
+# =============================================================================
+# Schema Registry — Confluent Schema Registry for Kafka
+# =============================================================================
+# Manages Avro / JSON Schema / Protobuf schemas used by Kafka producers and
+# consumers.
+# -----------------------------------------------------------------------------
+schemaRegistry:
+  enabled: true
+
+  image:
+    repository: confluentinc/cp-schema-registry
+    tag: "7.2.2"
+
+  replicas: 1
+
+  # ---- Resources ------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # ---- Service --------------------------------------------------------------
+  service:
+    port: 8080
+
+# =============================================================================
+# Kafka UI — browser-based cluster inspection tool
+# =============================================================================
+kafkaUi:
+  enabled: true
+
+  image:
+    repository: provectuslabs/kafka-ui
+    tag: "v0.7.2"
+
+  replicas: 1
+
+  # ---- Resources ------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# =============================================================================
+# Mosquitto — lightweight MQTT broker
+# =============================================================================
+# Eclipse Mosquitto provides MQTT v3.1 / v3.1.1 / v5 messaging for IoT and
+# event-driven microservices.
+# -----------------------------------------------------------------------------
+mosquitto:
+  enabled: true
+
+  image:
+    repository: eclipse-mosquitto
+    tag: "2.0.18"
+
+  # ---- Broker configuration -------------------------------------------------
+  config:
+    # Whether Mosquitto should persist messages and subscriptions to disk.
+    persistence: true
+    # When true, clients may connect without credentials.
+    allowAnonymous: true
+    # Standard MQTT TCP listener port.
+    tcpPort: 1883
+    # MQTT-over-WebSocket listener port.
+    websocketPort: 1884
+
+  # ---- Persistence ----------------------------------------------------------
+  persistence:
+    enabled: true
+    # PVC size for the message / subscription data directory.
+    size: 1Gi
+    # PVC size for the log directory.
+    logSize: 500Mi
+
+  # ---- Resources ------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# =============================================================================
+# MinIO — S3-compatible object storage
+# =============================================================================
+# A single-node MinIO instance.  For production HA, consider a distributed
+# (multi-node) deployment or a managed object-storage service.
+# -----------------------------------------------------------------------------
+minio:
+  enabled: true
+
+  image:
+    repository: minio/minio
+    tag: "RELEASE.2024-11-07T00-52-20Z"
+
+  # ---- Authentication -------------------------------------------------------
+  auth:
+    # Root (admin) credentials.  Leave empty here and supply via --set or
+    # existingSecret in production.
+    rootUser: ""
+    rootPassword: ""
+    # Name of an existing Secret containing keys: root-user, root-password.
+    existingSecret: ""
+
+  # ---- Persistence ----------------------------------------------------------
+  persistence:
+    size: 50Gi
+
+  # ---- Resources ------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+
+# =============================================================================
+# Ingress — optional external access to UI services
+# =============================================================================
+# When enabled, an Ingress resource is created for each UI endpoint.
+# Configure TLS and annotations to match your ingress controller.
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: false
+
+  # Ingress class to use (e.g. nginx, traefik, alb).
+  className: nginx
+
+  # Extra annotations applied to every Ingress resource.
+  # Example:
+  #   annotations:
+  #     cert-manager.io/cluster-issuer: letsencrypt-prod
+  annotations: {}
+
+  hosts:
+    temporalUi:
+      host: temporal.example.com
+    kafkaUi:
+      host: kafka-ui.example.com
+    minioConsole:
+      host: minio-console.example.com
+
+  # TLS configuration.
+  # Example:
+  #   tls:
+  #     - secretName: continuum-tls
+  #       hosts:
+  #         - temporal.example.com
+  #         - kafka-ui.example.com
+  #         - minio-console.example.com
+  tls: []

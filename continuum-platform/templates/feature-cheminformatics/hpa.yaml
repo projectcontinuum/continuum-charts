@@ -1,0 +1,23 @@
+{{- if and .Values.featureCheminformatics.enabled .Values.featureCheminformatics.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "continuum-platform.feature-cheminformatics.fullname" . }}
+  labels:
+    app.kubernetes.io/component: feature-cheminformatics
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "continuum-platform.feature-cheminformatics.fullname" . }}
+  minReplicas: {{ .Values.featureCheminformatics.autoscaling.minReplicas | default 1 }}
+  maxReplicas: {{ .Values.featureCheminformatics.autoscaling.maxReplicas | default 5 }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.featureCheminformatics.autoscaling.targetCPUUtilizationPercentage | default 75 }}
+{{- end }}

@@ -1,0 +1,127 @@
+{{- if .Values.orchestrationService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "continuum-platform.orchestration-service.fullname" . }}
+  labels:
+    app.kubernetes.io/component: orchestration-service
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.orchestrationService.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: orchestration-service
+      {{- include "continuum-platform.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: orchestration-service
+        {{- include "continuum-platform.selectorLabels" . | nindent 8 }}
+        {{- include "continuum-platform.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              KAFKA_BROKER=$(echo "{{ .Values.infra.kafka.brokerList }}" | tr ',' '\n' | head -1 | sed 's|.*://||')
+              KAFKA_HOST=$(echo $KAFKA_BROKER | cut -d: -f1)
+              KAFKA_PORT=$(echo $KAFKA_BROKER | cut -d: -f2)
+              until nc -z $KAFKA_HOST $KAFKA_PORT; do
+                echo "Waiting for Kafka..."; sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        - name: wait-for-temporal
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ .Values.infra.temporal.host }} {{ .Values.infra.temporal.port }}; do
+                echo "Waiting for Temporal..."; sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        - name: wait-for-api-server
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "continuum-platform.api-server.fullname" . }} {{ .Values.apiServer.service.port | default 8080 }}; do
+                echo "Waiting for API Server..."; sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: orchestration-service
+          image: "{{ .Values.orchestrationService.image.repository }}:{{ .Values.orchestrationService.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: CONTINUUM_KAFKA_MAIN_BROKER_LIST
+              value: {{ .Values.infra.kafka.brokerList | quote }}
+            - name: CONTINUUM_KAFKA_MAIN_SCHEMA_REGISTRY
+              value: {{ .Values.infra.schemaRegistry.url | quote }}
+            - name: TEMPORAL_SERVER_ADDRESS
+              value: {{ include "continuum-platform.infra.temporal.address" . | quote }}
+            - name: TEMPORAL_NAMESPACE
+              value: {{ .Values.infra.temporal.namespace | quote }}
+            - name: CONTINUUM_API_SERVER_BASE_URL
+              value: "http://{{ include "continuum-platform.api-server.fullname" . }}:{{ .Values.apiServer.service.port | default 8080 }}"
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.orchestrationService.resources | nindent 12 }}
+      {{- with .Values.orchestrationService.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.orchestrationService.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

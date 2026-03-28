@@ -1,0 +1,19 @@
+{{- if .Values.kafkaUi.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "continuum-infra.kafka-ui.fullname" . }}
+  labels:
+    app.kubernetes.io/component: kafka-ui
+    {{- include "continuum-infra.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/component: kafka-ui
+    {{- include "continuum-infra.selectorLabels" . | nindent 4 }}
+{{- end }}

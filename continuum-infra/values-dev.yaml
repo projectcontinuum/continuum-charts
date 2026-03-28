@@ -1,0 +1,240 @@
+# =============================================================================
+# Project Continuum — Development Environment Overrides
+# =============================================================================
+# Usage:
+#   helm install continuum-infra ./continuum-infra \
+#     -f continuum-infra/values.yaml \
+#     -f continuum-infra/values-dev.yaml \
+#     -n continuum-dev --create-namespace
+#
+# This file supplies non-secret default passwords and reduced resource requests
+# suitable for a local or shared development cluster (e.g. kind, minikube,
+# Docker Desktop, or a lightweight cloud dev namespace).
+#
+# WARNING: The credentials below are for DEVELOPMENT ONLY.  Never use these
+# values in staging or production.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global
+# -----------------------------------------------------------------------------
+global:
+  imagePullPolicy: IfNotPresent
+
+# -----------------------------------------------------------------------------
+# PostgreSQL
+# -----------------------------------------------------------------------------
+postgresql:
+  auth:
+    postgresPassword: "dev-postgres-pass"
+    continuumPassword: "dev-continuum-pass"
+
+  persistence:
+    size: 2Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# -----------------------------------------------------------------------------
+# Cassandra
+# -----------------------------------------------------------------------------
+cassandra:
+  # Scale down to a single node in dev to save resources.
+  replicaCount: 1
+
+  dbUser:
+    password: "dev-cassandra-pass"
+
+  persistence:
+    size: 8Gi
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+# -----------------------------------------------------------------------------
+# Elasticsearch
+# -----------------------------------------------------------------------------
+elasticsearch:
+  master:
+    replicaCount: 1
+    persistence:
+      size: 8Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+  data:
+    replicaCount: 1
+    persistence:
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+
+  coordinating:
+    replicaCount: 1
+
+# -----------------------------------------------------------------------------
+# Temporal
+# -----------------------------------------------------------------------------
+temporal:
+  # Single replica for every Temporal service in dev.
+  server:
+    frontend:
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+      podDisruptionBudget:
+        minAvailable: 0
+
+    history:
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+      podDisruptionBudget:
+        minAvailable: 0
+
+    matching:
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+      podDisruptionBudget:
+        minAvailable: 0
+
+    worker:
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+      podDisruptionBudget:
+        minAvailable: 0
+
+  admintools:
+    enabled: true
+
+  web:
+    enabled: true
+
+# -----------------------------------------------------------------------------
+# Temporal Search Attribute Init
+# -----------------------------------------------------------------------------
+temporalSearchInit:
+  enabled: true
+
+# -----------------------------------------------------------------------------
+# Kafka
+# -----------------------------------------------------------------------------
+kafka:
+  # Single broker is sufficient for dev.
+  replicas: 1
+
+  persistence:
+    size: 5Gi
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  podDisruptionBudget:
+    enabled: false
+
+  topologySpreadConstraints:
+    enabled: false
+
+# -----------------------------------------------------------------------------
+# Schema Registry
+# -----------------------------------------------------------------------------
+schemaRegistry:
+  replicas: 1
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# -----------------------------------------------------------------------------
+# Kafka UI
+# -----------------------------------------------------------------------------
+kafkaUi:
+  replicas: 1
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# -----------------------------------------------------------------------------
+# Mosquitto
+# -----------------------------------------------------------------------------
+mosquitto:
+  persistence:
+    size: 256Mi
+    logSize: 128Mi
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# -----------------------------------------------------------------------------
+# MinIO
+# -----------------------------------------------------------------------------
+minio:
+  auth:
+    rootUser: "dev-minio-root"
+    rootPassword: "dev-minio-secret"
+
+  persistence:
+    size: 5Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# -----------------------------------------------------------------------------
+# Ingress — disabled by default in dev; port-forward instead.
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: false

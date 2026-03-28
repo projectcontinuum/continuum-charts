@@ -1,0 +1,19 @@
+{{- if .Values.mosquitto.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "continuum-infra.mosquitto.fullname" . }}-config
+  labels:
+    app.kubernetes.io/component: mosquitto
+    {{- include "continuum-infra.labels" . | nindent 4 }}
+data:
+  mosquitto.conf: |
+    persistence {{ .Values.mosquitto.config.persistence }}
+    persistence_location /mosquitto/data/
+    log_dest file /mosquitto/log/mosquitto.log
+
+    listener {{ .Values.mosquitto.config.tcpPort | default 1883 }}
+    listener {{ .Values.mosquitto.config.websocketPort | default 1884 }}
+    protocol websockets
+    allow_anonymous {{ .Values.mosquitto.config.allowAnonymous }}
+{{- end }}

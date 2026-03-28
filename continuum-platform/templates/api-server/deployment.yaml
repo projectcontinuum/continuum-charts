@@ -1,0 +1,153 @@
+{{- if .Values.apiServer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "continuum-platform.api-server.fullname" . }}
+  labels:
+    app.kubernetes.io/component: api-server
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.apiServer.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: api-server
+      {{- include "continuum-platform.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: api-server
+        {{- include "continuum-platform.selectorLabels" . | nindent 8 }}
+        {{- include "continuum-platform.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: wait-for-temporal
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ .Values.infra.temporal.host }} {{ .Values.infra.temporal.port }}; do
+                echo "Waiting for Temporal..."; sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        - name: wait-for-postgresql
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ .Values.infra.postgresql.host }} {{ .Values.infra.postgresql.port }}; do
+                echo "Waiting for PostgreSQL..."; sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        - name: wait-for-minio
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              MINIO_HOST=$(echo "{{ .Values.infra.minio.endpoint }}" | sed 's|http[s]*://||' | cut -d: -f1)
+              MINIO_PORT=$(echo "{{ .Values.infra.minio.endpoint }}" | sed 's|http[s]*://||' | cut -d: -f2)
+              MINIO_PORT=${MINIO_PORT:-9000}
+              until nc -z $MINIO_HOST $MINIO_PORT; do
+                echo "Waiting for MinIO..."; sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: api-server
+          image: "{{ .Values.apiServer.image.repository }}:{{ .Values.apiServer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: TEMPORAL_SERVER_ADDRESS
+              value: {{ include "continuum-platform.infra.temporal.address" . | quote }}
+            - name: TEMPORAL_NAMESPACE
+              value: {{ .Values.infra.temporal.namespace | quote }}
+            - name: CONTINUUM_STORAGE_TYPE
+              value: {{ .Values.storage.type | quote }}
+            - name: CONTINUUM_MINIO_ENDPOINT
+              value: {{ .Values.infra.minio.endpoint | quote }}
+            - name: CONTINUUM_MINIO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "continuum-platform.minio.secretName" . }}
+                  key: root-user
+            - name: CONTINUUM_MINIO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "continuum-platform.minio.secretName" . }}
+                  key: root-password
+            - name: CONTINUUM_CACHE_BUCKET_NAME
+              value: {{ .Values.storage.bucketName | quote }}
+            - name: CONTINUUM_CACHE_BUCKET_REGION
+              value: {{ .Values.storage.bucketRegion | quote }}
+            - name: CONTINUUM_CACHE_BUCKET_BASE_PATH
+              value: {{ .Values.storage.bucketBasePath | quote }}
+            - name: CONTINUUM_DB_URL
+              value: {{ include "continuum-platform.infra.db.url" . | quote }}
+            - name: CONTINUUM_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "continuum-platform.postgresql.secretName" . }}
+                  key: username
+            - name: CONTINUUM_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "continuum-platform.postgresql.secretName" . }}
+                  key: password
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.apiServer.resources | nindent 12 }}
+      {{- with .Values.apiServer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.apiServer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

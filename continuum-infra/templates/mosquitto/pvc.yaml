@@ -1,0 +1,35 @@
+{{- if and .Values.mosquitto.enabled .Values.mosquitto.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "continuum-infra.mosquitto.fullname" . }}-data
+  labels:
+    app.kubernetes.io/component: mosquitto
+    {{- include "continuum-infra.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.global.storageClass }}
+  storageClassName: {{ .Values.global.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mosquitto.persistence.size | default "1Gi" }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "continuum-infra.mosquitto.fullname" . }}-log
+  labels:
+    app.kubernetes.io/component: mosquitto
+    {{- include "continuum-infra.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.global.storageClass }}
+  storageClassName: {{ .Values.global.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mosquitto.persistence.logSize | default "500Mi" }}
+{{- end }}

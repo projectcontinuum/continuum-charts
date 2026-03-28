@@ -1,0 +1,19 @@
+{{- if .Values.kafka.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "continuum-infra.kafka.fullname" . }}
+  labels:
+    app.kubernetes.io/component: kafka
+    {{- include "continuum-infra.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 19092
+      targetPort: broker
+      protocol: TCP
+      name: broker
+  selector:
+    app.kubernetes.io/component: kafka
+    {{- include "continuum-infra.selectorLabels" . | nindent 4 }}
+{{- end }}

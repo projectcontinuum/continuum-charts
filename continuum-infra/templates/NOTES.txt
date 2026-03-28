@@ -1,0 +1,27 @@
+Continuum Infrastructure has been deployed.
+
+Components:
+  - PostgreSQL (Continuum application database)
+  - Temporal (workflow orchestration) with Cassandra + Elasticsearch
+  - Kafka (3-broker KRaft cluster)
+  - Schema Registry
+  - Kafka UI
+  - Mosquitto (MQTT broker)
+  - MinIO (S3-compatible object storage)
+
+To verify the deployment:
+
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+Access monitoring UIs via port-forward:
+
+  # Temporal UI
+  kubectl port-forward svc/{{ .Release.Name }}-temporal-web 8080:8080 -n {{ .Release.Namespace }}
+
+  # Kafka UI
+  kubectl port-forward svc/{{ include "continuum-infra.kafka-ui.fullname" . }} 8082:8080 -n {{ .Release.Namespace }}
+
+  # MinIO Console
+  kubectl port-forward svc/{{ include "continuum-infra.minio.fullname" . }} 9001:9001 -n {{ .Release.Namespace }}
+
+Next step: Install continuum-platform chart.

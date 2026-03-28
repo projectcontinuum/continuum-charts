@@ -1,0 +1,224 @@
+# ============================================================
+# Global settings
+# ============================================================
+global:
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+# ============================================================
+# Infrastructure service references
+# These MUST match the release name and service names from continuum-infra
+# ============================================================
+infra:
+  releaseName: continuum-infra
+  postgresql:
+    host: continuum-infra-postgresql
+    port: 5432
+    database: continuum
+  temporal:
+    host: continuum-infra-temporal-frontend
+    port: 7233
+    namespace: default
+  kafka:
+    brokerList: "PLAINTEXT://continuum-infra-kafka-0.continuum-infra-kafka-headless:19092,PLAINTEXT://continuum-infra-kafka-1.continuum-infra-kafka-headless:19092,PLAINTEXT://continuum-infra-kafka-2.continuum-infra-kafka-headless:19092"
+  schemaRegistry:
+    url: "http://continuum-infra-schema-registry:8080"
+  mosquitto:
+    host: continuum-infra-mosquitto
+    port: 1883
+  minio:
+    endpoint: "http://continuum-infra-minio:9000"
+
+# ============================================================
+# Secrets
+# Provide credentials directly or reference existing secrets
+# ============================================================
+secrets:
+  # Option 1: Inline credentials (dev/staging)
+  postgresql:
+    username: continuum_owner
+    password: ""                   # REQUIRED — override via --set or values-dev.yaml
+  minio:
+    rootUser: ""                   # REQUIRED
+    rootPassword: ""               # REQUIRED
+  # Option 2: Use existing secrets (production — Vault, External Secrets, etc.)
+  existingPostgresqlSecret: ""     # Secret with keys: username, password
+  existingMinioSecret: ""          # Secret with keys: root-user, root-password
+
+# ============================================================
+# Storage configuration (S3/MinIO)
+# ============================================================
+storage:
+  type: minio
+  bucketName: continuum-worker-storage
+  bucketRegion: us-east-2
+  bucketBasePath: workflow-data
+
+# ============================================================
+# continuum-api-server
+# ============================================================
+apiServer:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-api-server
+    tag: "0.0.10"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
+# continuum-orchestration-service
+# ============================================================
+orchestrationService:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-orchestration-service
+    tag: "0.0.10"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
+# continuum-message-bridge
+# ============================================================
+messageBridge:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-message-bridge
+    tag: "0.0.10"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
+# continuum-workbench (frontend IDE)
+# ============================================================
+workbench:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-workbench
+    tag: "0.0.4"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
+# Feature Workers (horizontally scalable)
+# ============================================================
+featureBase:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-feature-base
+    tag: "0.0.5"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  taskQueue: CONTINUUM_FEATURE_BASE_TASK_QUEUE
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+featureCheminformatics:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-feature-cheminformatics
+    tag: "0.0.3"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  taskQueue: CONTINUUM_CHEMINFORMATICS_WORKER_TASK_QUEUE
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
+# Ingress (Workbench + API Server)
+# ============================================================
+ingress:
+  enabled: false
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+  hosts:
+    workbench:
+      host: continuum.example.com
+      path: /
+    apiServer:
+      host: api.continuum.example.com
+      path: /
+  tls: []

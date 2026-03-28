@@ -1,0 +1,23 @@
+Continuum Platform has been deployed.
+
+Components:
+  - API Server
+  - Orchestration Service
+  - Message Bridge
+  - Workbench (IDE frontend)
+  - Feature Base Worker
+  - Feature Cheminformatics Worker
+
+To verify the deployment:
+
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+Access the platform:
+
+  # API Server health check
+  kubectl port-forward svc/{{ include "continuum-platform.api-server.fullname" . }} 8080:8080 -n {{ .Release.Namespace }}
+  curl http://localhost:8080/actuator/health
+
+  # Workbench IDE
+  kubectl port-forward svc/{{ include "continuum-platform.workbench.fullname" . }} 3002:8080 -n {{ .Release.Namespace }}
+  # Open http://localhost:3002 in your browser

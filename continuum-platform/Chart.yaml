@@ -1,0 +1,15 @@
+apiVersion: v2
+name: continuum-platform
+description: Project Continuum application services — API server, orchestration, workbench, and feature workers
+type: application
+version: 0.1.0
+appVersion: "0.0.10"
+keywords:
+  - continuum
+  - workflow
+  - platform
+maintainers:
+  - name: Project Continuum
+home: https://github.com/projectcontinuum
+annotations:
+  continuum.io/requires: "continuum-infra >= 0.1.0"

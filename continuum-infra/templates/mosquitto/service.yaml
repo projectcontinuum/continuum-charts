@@ -1,0 +1,23 @@
+{{- if .Values.mosquitto.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "continuum-infra.mosquitto.fullname" . }}
+  labels:
+    app.kubernetes.io/component: mosquitto
+    {{- include "continuum-infra.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.mosquitto.config.tcpPort | default 1883 }}
+      targetPort: mqtt
+      protocol: TCP
+      name: mqtt
+    - port: {{ .Values.mosquitto.config.websocketPort | default 1884 }}
+      targetPort: websocket
+      protocol: TCP
+      name: websocket
+  selector:
+    app.kubernetes.io/component: mosquitto
+    {{- include "continuum-infra.selectorLabels" . | nindent 4 }}
+{{- end }}

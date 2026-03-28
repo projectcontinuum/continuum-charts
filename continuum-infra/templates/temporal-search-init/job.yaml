@@ -1,0 +1,63 @@
+{{- if .Values.temporalSearchInit.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "continuum-infra.fullname" . }}-temporal-search-init
+  labels:
+    app.kubernetes.io/component: temporal-search-init
+    {{- include "continuum-infra.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: {{ .Values.temporalSearchInit.backoffLimit | default 5 }}
+  activeDeadlineSeconds: {{ .Values.temporalSearchInit.activeDeadlineSeconds | default 600 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: temporal-search-init
+        {{- include "continuum-infra.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: false
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: temporal-search-init
+          image: "{{ .Values.temporalSearchInit.image.repository }}:{{ .Values.temporalSearchInit.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: "{{ .Release.Name }}-temporal-frontend:7233"
+            - name: TEMPORAL_CLI_ADDRESS
+              value: "{{ .Release.Name }}-temporal-frontend:7233"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Waiting for Temporal server to be ready..."
+              max_attempts=60
+              attempt=0
+              until temporal operator cluster health 2>/dev/null | grep -q "SERVING"; do
+                attempt=$((attempt + 1))
+                if [ $attempt -ge $max_attempts ]; then
+                  echo "Temporal server did not become ready in time, exiting..."
+                  exit 1
+                fi
+                echo "Temporal not ready yet (attempt $attempt/$max_attempts), waiting..."
+                sleep 5
+              done
+              echo "Temporal cluster is healthy. Waiting for default namespace..."
+              until temporal operator namespace describe default > /dev/null 2>&1; do
+                echo "Default namespace not ready yet, waiting..."
+                sleep 3
+              done
+              echo "Temporal is ready. Creating search attributes..."
+              {{- range .Values.temporalSearchInit.attributes }}
+              temporal operator search-attribute create --namespace default --name {{ .name | quote }} --type {{ .type }} || true
+              {{- end }}
+              echo "Search attributes created successfully!"
+{{- end }}
