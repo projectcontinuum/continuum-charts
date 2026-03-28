@@ -37,6 +37,7 @@ spec:
               drop:
                 - ALL
           command:
+            - minio
             - server
             - /data
             - --console-address
@@ -81,6 +82,7 @@ spec:
               port: api
             initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 5
             failureThreshold: 30
           resources:
             {{- toYaml .Values.minio.resources | nindent 12 }}

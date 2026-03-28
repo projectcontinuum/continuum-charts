@@ -81,6 +81,26 @@ spec:
               value: {{ .Values.kafka.clusterId | quote }}
             - name: KAFKA_LOG_RETENTION_HOURS
               value: {{ .Values.kafka.config.logRetentionHours | default 168 | quote }}
+            {{- if .Values.kafka.config.defaultReplicationFactor }}
+            - name: KAFKA_DEFAULT_REPLICATION_FACTOR
+              value: {{ .Values.kafka.config.defaultReplicationFactor | quote }}
+            {{- end }}
+            {{- if .Values.kafka.config.minInsyncReplicas }}
+            - name: KAFKA_MIN_INSYNC_REPLICAS
+              value: {{ .Values.kafka.config.minInsyncReplicas | quote }}
+            {{- end }}
+            {{- if .Values.kafka.config.offsetsTopicReplicationFactor }}
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: {{ .Values.kafka.config.offsetsTopicReplicationFactor | quote }}
+            {{- end }}
+            {{- if .Values.kafka.config.transactionStateLogReplicationFactor }}
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: {{ .Values.kafka.config.transactionStateLogReplicationFactor | quote }}
+            {{- end }}
+            {{- if .Values.kafka.config.transactionStateLogMinIsr }}
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: {{ .Values.kafka.config.transactionStateLogMinIsr | quote }}
+            {{- end }}
           livenessProbe:
             exec:
               command:
@@ -109,6 +129,7 @@ spec:
                 - kafka-broker-api-versions --bootstrap-server localhost:19092 > /dev/null 2>&1
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
             failureThreshold: 30
           resources:
             {{- toYaml .Values.kafka.resources | nindent 12 }}

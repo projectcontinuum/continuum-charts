@@ -189,34 +189,38 @@ temporal:
         # ---- Datastores ------------------------------------------------------
         datastores:
           # -- Default store (Cassandra) ---------------------------------------
-          default:
-            cassandra:
-              createDatabase: true
-              manageSchema: true
-              hosts: "continuum-infra-cassandra"
-              port: 9042
-              keyspace: temporal
-              user: temporal
-              existingSecret: continuum-infra-cassandra
-              secretKey: cassandra-password
-              consistency:
-                default:
-                  consistency: local_quorum
-                  serialConsistency: local_serial
-              replicationFactor: 3
-              datacenter: dc1
+          # For production: Uncomment and configure Cassandra
+          # For dev: SQL configuration is provided in values-dev.yaml
+          default: {}
+            # cassandra:
+            #   createDatabase: true
+            #   manageSchema: true
+            #   hosts: "continuum-infra-cassandra"
+            #   port: 9042
+            #   keyspace: temporal
+            #   user: temporal
+            #   existingSecret: continuum-infra-cassandra
+            #   secretKey: cassandra-password
+            #   consistency:
+            #     default:
+            #       consistency: local_quorum
+            #       serialConsistency: local_serial
+            #   replicationFactor: 3
+            #   datacenter: dc1
 
           # -- Visibility store (Elasticsearch) --------------------------------
-          visibility:
-            elasticsearch:
-              manageSchema: true
-              version: v7
-              url:
-                scheme: http
-                host: "continuum-infra-elasticsearch:9200"
-              indices:
-                visibility: temporal_visibility_v1
-              closeIdleConnectionsInterval: 15s
+          # For production: Uncomment and configure Elasticsearch
+          # For dev: SQL configuration is provided in values-dev.yaml
+          visibility: {}
+            # elasticsearch:
+            #   manageSchema: true
+            #   version: v7
+            #   url:
+            #     scheme: http
+            #     host: "continuum-infra-elasticsearch:9200"
+            #   indices:
+            #     visibility: temporal_visibility_v1
+            #   closeIdleConnectionsInterval: 15s
 
     # ---- Namespaces ---------------------------------------------------------
     # Namespaces to create when the cluster is bootstrapped.

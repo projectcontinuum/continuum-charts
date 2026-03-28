@@ -62,7 +62,6 @@ temporal:
         datastores:
           # Override: use SQL/PostgreSQL instead of Cassandra
           default:
-            cassandra: null
             sql:
               pluginName: postgres12
               databaseName: temporal
@@ -75,7 +74,6 @@ temporal:
               maxConnLifetime: "1h"
           # Override: use SQL/PostgreSQL instead of Elasticsearch
           visibility:
-            elasticsearch: null
             sql:
               pluginName: postgres12
               databaseName: temporal_visibility
@@ -159,6 +157,16 @@ kafka:
 
   topologySpreadConstraints:
     enabled: false
+
+  # Set replication factors to 1 for single-broker dev setup
+  config:
+    autoCreateTopics: "true"
+    logRetentionHours: 168
+    defaultReplicationFactor: "1"
+    minInsyncReplicas: "1"
+    offsetsTopicReplicationFactor: "1"
+    transactionStateLogReplicationFactor: "1"
+    transactionStateLogMinIsr: "1"
 
 # -----------------------------------------------------------------------------
 # Schema Registry
