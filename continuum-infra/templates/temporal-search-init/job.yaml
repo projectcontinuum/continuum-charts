@@ -50,11 +50,17 @@ spec:
                 echo "Temporal not ready yet (attempt $attempt/$max_attempts), waiting..."
                 sleep 5
               done
-              echo "Temporal cluster is healthy. Waiting for default namespace..."
-              until temporal operator namespace describe default > /dev/null 2>&1; do
-                echo "Default namespace not ready yet, waiting..."
-                sleep 3
-              done
+              echo "Temporal cluster is healthy. Checking for default namespace..."
+              
+              # Check if default namespace exists, create if it doesn't
+              if ! temporal operator namespace describe default > /dev/null 2>&1; then
+                echo "Default namespace not found, creating it..."
+                temporal operator namespace create default --retention 72h
+                echo "Default namespace created successfully."
+              else
+                echo "Default namespace already exists."
+              fi
+              
               echo "Temporal is ready. Creating search attributes..."
               {{- range .Values.temporalSearchInit.attributes }}
               temporal operator search-attribute create --namespace default --name {{ .name | quote }} --type {{ .type }} || true
