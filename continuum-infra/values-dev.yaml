@@ -41,63 +41,53 @@ postgresql:
       memory: 512Mi
 
 # -----------------------------------------------------------------------------
-# Cassandra
+# Cassandra — disabled in dev (Temporal uses PostgreSQL instead)
 # -----------------------------------------------------------------------------
 cassandra:
-  # Scale down to a single node in dev to save resources.
-  replicaCount: 1
-
-  dbUser:
-    password: "dev-cassandra-pass"
-
-  persistence:
-    size: 8Gi
-
-  resources:
-    requests:
-      cpu: 250m
-      memory: 1Gi
-    limits:
-      cpu: "1"
-      memory: 2Gi
+  enabled: false
 
 # -----------------------------------------------------------------------------
-# Elasticsearch
+# Elasticsearch — disabled in dev (Temporal uses standard SQL visibility)
 # -----------------------------------------------------------------------------
 elasticsearch:
-  master:
-    replicaCount: 1
-    persistence:
-      size: 8Gi
-    resources:
-      requests:
-        cpu: 100m
-        memory: 512Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-
-  data:
-    replicaCount: 1
-    persistence:
-      size: 10Gi
-    resources:
-      requests:
-        cpu: 250m
-        memory: 1Gi
-      limits:
-        cpu: "1"
-        memory: 2Gi
-
-  coordinating:
-    replicaCount: 1
+  enabled: false
 
 # -----------------------------------------------------------------------------
-# Temporal
+# Temporal — use PostgreSQL for persistence instead of Cassandra + Elasticsearch
 # -----------------------------------------------------------------------------
 temporal:
-  # Single replica for every Temporal service in dev.
   server:
+    config:
+      persistence:
+        datastores:
+          # Override: use SQL/PostgreSQL instead of Cassandra
+          default:
+            cassandra: null
+            sql:
+              pluginName: postgres12
+              databaseName: temporal
+              connectAddr: "continuum-infra-postgresql:5432"
+              connectProtocol: "tcp"
+              user: postgres
+              password: "dev-postgres-pass"
+              maxConns: 20
+              maxIdleConns: 20
+              maxConnLifetime: "1h"
+          # Override: use SQL/PostgreSQL instead of Elasticsearch
+          visibility:
+            elasticsearch: null
+            sql:
+              pluginName: postgres12
+              databaseName: temporal_visibility
+              connectAddr: "continuum-infra-postgresql:5432"
+              connectProtocol: "tcp"
+              user: postgres
+              password: "dev-postgres-pass"
+              maxConns: 20
+              maxIdleConns: 20
+              maxConnLifetime: "1h"
+
+    # Single replica for every Temporal service in dev.
     frontend:
       replicaCount: 1
       resources:

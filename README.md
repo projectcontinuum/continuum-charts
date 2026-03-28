@@ -4,7 +4,7 @@ This directory contains two Helm charts for deploying Project Continuum on Kuber
 
 | Chart | Description |
 |-------|-------------|
-| `continuum-infra` | Infrastructure layer — PostgreSQL, Temporal (with Cassandra + Elasticsearch), Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO |
+| `continuum-infra` | Infrastructure layer — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO |
 | `continuum-platform` | Application layer — API Server, Orchestration Service, Message Bridge, Workbench, Feature Base Worker, Feature Cheminformatics Worker |
 
 ## Prerequisites
@@ -12,6 +12,19 @@ This directory contains two Helm charts for deploying Project Continuum on Kuber
 - Kubernetes cluster (v1.26+)
 - Helm v3.12+
 - `kubectl` configured to target your cluster
+
+## Dev vs Production Temporal Backend
+
+The Temporal persistence backend differs between environments:
+
+| Environment | Default Store | Visibility Store | Extra Components |
+|-------------|--------------|-----------------|------------------|
+| **Dev** (`values-dev.yaml`) | PostgreSQL (shared instance) | PostgreSQL (shared instance) | None |
+| **Production** (`values.yaml`) | Cassandra (3-node cluster) | Elasticsearch | Cassandra + Elasticsearch subcharts |
+
+In dev, Temporal reuses the same PostgreSQL instance deployed for the Continuum application (with separate databases `temporal` and `temporal_visibility`). This significantly reduces resource requirements — no Cassandra or Elasticsearch pods are deployed.
+
+In production, the base `values.yaml` configures Cassandra for high-throughput durable storage and Elasticsearch for advanced workflow search/list/count capabilities.
 
 ## Architecture
 
