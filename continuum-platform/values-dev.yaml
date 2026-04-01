@@ -1,6 +1,6 @@
 # ============================================================
 # Development overrides for continuum-platform
-# Usage: helm install ... -f values-dev.yaml
+# Usage: helm install continuum-platform ./continuum-platform -f continuum-platform/values.yaml -f continuum-platform/values-dev.yaml -n continuum-dev --create-namespace
 # ============================================================
 
 secrets:

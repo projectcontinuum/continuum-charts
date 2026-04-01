@@ -2,10 +2,7 @@
 # Project Continuum — Development Environment Overrides
 # =============================================================================
 # Usage:
-#   helm install continuum-infra ./continuum-infra \
-#     -f continuum-infra/values.yaml \
-#     -f continuum-infra/values-dev.yaml \
-#     -n continuum-dev --create-namespace
+#   helm install continuum-infra ./continuum-infra -f continuum-infra/values.yaml -f continuum-infra/values-dev.yaml -n continuum-dev --create-namespace
 #
 # This file supplies non-secret default passwords and reduced resource requests
 # suitable for a local or shared development cluster (e.g. kind, minikube,
