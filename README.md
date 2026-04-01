@@ -241,7 +241,9 @@ kubectl port-forward svc/continuum-infra-kafka-ui 8083:8080 -n continuum
 # MinIO Console [optional]
 kubectl port-forward svc/continuum-infra-minio 9001:9001 -n continuum
 ```
+**Open Workbench in browser** 
 
+Open workbench in your browser: [Continuum-Workbench](http://localhost:3002/#/home/node)
 
 **Ingress (production):**
 
