@@ -95,6 +95,8 @@ spec:
               value: {{ .Values.infra.temporal.namespace | quote }}
             - name: CONTINUUM_API_SERVER_BASE_URL
               value: "http://{{ include "continuum-platform.api-server.fullname" . }}:{{ .Values.apiServer.service.port | default 8080 }}"
+            - name: CONTINUUM_ORCHESTRATION_SERVICE_PORT
+              value: "8080"
           startupProbe:
             httpGet:
               path: /actuator/health
