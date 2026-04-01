@@ -236,9 +236,3 @@ minio:
     limits:
       cpu: 500m
       memory: 512Mi
-
-# -----------------------------------------------------------------------------
-# Ingress — disabled by default in dev; port-forward instead.
-# -----------------------------------------------------------------------------
-ingress:
-  enabled: false
