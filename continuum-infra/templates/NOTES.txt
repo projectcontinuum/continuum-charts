@@ -8,10 +8,14 @@ Components:
   - Kafka UI
   - Mosquitto (MQTT broker)
   - MinIO (S3-compatible object storage)
+  - Theia Cloud (Kubernetes-native IDE session management)
 
 To verify the deployment:
 
   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+  # Verify Theia Cloud CRDs
+  kubectl get crds | grep theia.cloud
 
 Access monitoring UIs via port-forward:
 

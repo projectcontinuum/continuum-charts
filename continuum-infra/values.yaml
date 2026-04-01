@@ -12,6 +12,7 @@
 #   - Kafka UI            (browser-based Kafka inspection)
 #   - Mosquitto           (lightweight MQTT broker)
 #   - MinIO               (S3-compatible object storage)
+#   - Theia Cloud         (Kubernetes-native IDE session management)
 #
 # Override per-environment with values-<env>.yaml (e.g. values-dev.yaml).
 # =============================================================================
@@ -493,6 +494,96 @@ minio:
   # ---- Scheduling -----------------------------------------------------------
   nodeSelector: {}
   tolerations: []
+
+# =============================================================================
+# Theia Cloud Base — cluster-wide resources (ClusterRoles, cert-manager)
+# =============================================================================
+# Deploys ClusterRoles for the operator and service, and optionally a
+# cert-manager ClusterIssuer for TLS certificates.
+# See https://github.com/eclipse-theia/theia-cloud-helm
+# -----------------------------------------------------------------------------
+theia-cloud-base:
+  enabled: true
+
+  # ---- cert-manager ClusterIssuer -------------------------------------------
+  issuer:
+    email: "admin@example.com"
+  ingressname: nginx
+
+  # ---- ClusterRole names ----------------------------------------------------
+  # These must match the names referenced in the theia-cloud operator/service.
+  operatorClusterRole: theia-cloud-operator-cluster-role
+  serviceClusterRole: theia-cloud-service-cluster-role
+
+# =============================================================================
+# Theia Cloud CRDs — Custom Resource Definitions + conversion webhook
+# =============================================================================
+# Installs AppDefinition, Session, and Workspace CRDs with an optional
+# conversion webhook for schema migrations between CRD versions.
+# -----------------------------------------------------------------------------
+theia-cloud-crds:
+  enabled: true
+
+  # Conversion webhook image (handles CRD version migrations).
+  # conversionWebhook:
+  #   image: theiacloud/theia-cloud-conversion-webhook
+
+# =============================================================================
+# Theia Cloud — operator, service REST API, and landing page
+# =============================================================================
+# The main Theia Cloud chart deploys the operator that watches AppDefinition,
+# Session, and Workspace custom resources to provision/deprovision IDE sessions.
+# -----------------------------------------------------------------------------
+theia-cloud:
+  enabled: true
+
+  # ---- Host / Ingress configuration -----------------------------------------
+  hosts:
+    # Base domain for IDE sessions.  Sessions are exposed as subdomains:
+    #   <session-name>.<baseHost>
+    baseHost: "theia.example.com"
+    usePaths: false
+    # Set to true if the cluster has a working TLS setup.
+    tlsEnabled: true
+
+  ingress:
+    clusterIssuer: theia-cloud-selfsigned-issuer
+    theiaCloudCommonName: false
+    ingressname: nginx
+    certManagerAnnotations: true
+
+  # ---- Operator configuration -----------------------------------------------
+  operator:
+    # Cloud provider:  K8S (generic), MINIKUBE, or a cloud-specific value.
+    cloudProvider: K8S
+    # Number of sessions a single user may run concurrently.
+    sessionsPerUser: "1"
+    # Replicas for the operator deployment.
+    replicas: 2
+
+  # ---- Service REST API ------------------------------------------------------
+  service: {}
+
+  # ---- Landing page ----------------------------------------------------------
+  # Continuum has its own workbench UI, so the built-in landing page is disabled.
+  landingPage:
+    enabled: false
+
+  # ---- Demo application ------------------------------------------------------
+  # Do not install the sample Theia application in production.
+  demoApplication:
+    install: false
+
+  # ---- Keycloak authentication -----------------------------------------------
+  # Disabled by default; enable and configure per-environment when an OIDC
+  # provider is available.
+  keycloak:
+    enable: false
+
+  # ---- Image preloading (DaemonSet) ------------------------------------------
+  # When enabled, a DaemonSet pre-pulls IDE images on every node.
+  # Disabled by default to save bandwidth; enable if cold-start latency matters.
+  imagePullAddons: false
 
 # =============================================================================
 # Ingress — optional external access to UI services
