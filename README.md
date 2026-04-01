@@ -2,9 +2,10 @@
 
 This directory contains two Helm charts for deploying Project Continuum on Kubernetes:
 
-| Chart | Description |
-|-------|-------------|
-| `continuum-infra` | Infrastructure layer — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO |
+
+| Chart                | Description                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `continuum-infra`    | Infrastructure layer — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO                                       |
 | `continuum-platform` | Application layer — API Server, Orchestration Service, Message Bridge, Workbench, Feature Base Worker, Feature Cheminformatics Worker |
 
 ## Prerequisites
@@ -17,10 +18,11 @@ This directory contains two Helm charts for deploying Project Continuum on Kuber
 
 The Temporal persistence backend differs between environments:
 
-| Environment | Default Store | Visibility Store | Extra Components |
-|-------------|--------------|-----------------|------------------|
-| **Dev** (`values-dev.yaml`) | PostgreSQL (shared instance) | PostgreSQL (shared instance) | None |
-| **Production** (`values.yaml`) | Cassandra (3-node cluster) | Elasticsearch | Cassandra + Elasticsearch subcharts |
+
+| Environment                    | Default Store                | Visibility Store             | Extra Components                    |
+| ------------------------------ | ---------------------------- | ---------------------------- | ----------------------------------- |
+| **Dev** (`values-dev.yaml`)    | PostgreSQL (shared instance) | PostgreSQL (shared instance) | None                                |
+| **Production** (`values.yaml`) | Cassandra (3-node cluster)   | Elasticsearch                | Cassandra + Elasticsearch subcharts |
 
 In dev, Temporal reuses the same PostgreSQL instance deployed for the Continuum application (with separate databases `temporal` and `temporal_visibility`). This significantly reduces resource requirements — no Cassandra or Elasticsearch pods are deployed.
 
@@ -221,21 +223,25 @@ All pods should be `Running`. The init containers will wait for their infrastruc
 **Port-forward (dev):**
 
 ```bash
-# Workbench UI
-kubectl port-forward svc/continuum-platform-workbench 8080:8080 -n continuum
+# MQTT Server
+kubectl port-forward svc/continuum-infra-mosquitto 31884:1884 -n continuum
 
 # API Server
-kubectl port-forward svc/continuum-platform-api-server 8081:8080 -n continuum
+kubectl port-forward svc/continuum-platform-api-server 8080:8080 -n continuum
 
-# Temporal UI
+# Workbench UI
+kubectl port-forward svc/continuum-platform-workbench 3002:8080 -n continuum
+
+# Temporal UI [optional]
 kubectl port-forward svc/continuum-infra-temporal-web 8082:8080 -n continuum
 
-# Kafka UI
+# Kafka UI [optional]
 kubectl port-forward svc/continuum-infra-kafka-ui 8083:8080 -n continuum
 
-# MinIO Console
+# MinIO Console [optional]
 kubectl port-forward svc/continuum-infra-minio 9001:9001 -n continuum
 ```
+
 
 **Ingress (production):**
 
