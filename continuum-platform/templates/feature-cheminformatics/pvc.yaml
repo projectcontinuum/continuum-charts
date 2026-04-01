@@ -1,0 +1,18 @@
+{{- if .Values.featureCheminformatics.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "continuum-platform.feature-cheminformatics.fullname" . }}-cache
+  labels:
+    app.kubernetes.io/component: feature-cheminformatics
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.cacheStorage.accessMode | default "ReadWriteOnce" }}
+  {{- if .Values.cacheStorage.storageClassName }}
+  storageClassName: {{ .Values.cacheStorage.storageClassName | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.cacheStorage.size | default "5Gi" }}
+{{- end }}

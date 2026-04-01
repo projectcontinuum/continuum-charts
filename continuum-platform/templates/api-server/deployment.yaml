@@ -103,6 +103,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "continuum-platform.minio.secretName" . }}
                   key: root-password
+            - name: CONTINUUM_CACHE_DIRECTORY
+              value: "{{ .Values.cacheStorage.mountPath }}/workflow-data"
             - name: CONTINUUM_CACHE_BUCKET_NAME
               value: {{ .Values.storage.bucketName | quote }}
             - name: CONTINUUM_CACHE_BUCKET_REGION
@@ -142,6 +144,13 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.apiServer.resources | nindent 12 }}
+          volumeMounts:
+            - name: cache-storage
+              mountPath: {{ .Values.cacheStorage.mountPath }}
+      volumes:
+        - name: cache-storage
+          persistentVolumeClaim:
+            claimName: {{ include "continuum-platform.api-server.fullname" . }}-cache
       {{- with .Values.apiServer.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

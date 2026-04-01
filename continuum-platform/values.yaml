@@ -55,6 +55,15 @@ storage:
   bucketBasePath: workflow-data
 
 # ============================================================
+# Local cache storage (PVC for temporary workflow data)
+# ============================================================
+cacheStorage:
+  mountPath: /data/continuum-cache
+  size: 5Gi
+  storageClassName: ""
+  accessMode: ReadWriteOnce
+
+# ============================================================
 # continuum-api-server
 # ============================================================
 apiServer:

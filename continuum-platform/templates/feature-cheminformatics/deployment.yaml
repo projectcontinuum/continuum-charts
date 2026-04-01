@@ -124,6 +124,12 @@ spec:
               value: "http://{{ include "continuum-platform.api-server.fullname" . }}:{{ .Values.apiServer.service.port | default 8080 }}"
             - name: CONTINUUM_NODE_TASK_QUEUE
               value: {{ .Values.featureCheminformatics.taskQueue | quote }}
+            - name: CONTINUUM_CACHE_STORAGE_PATH
+              value: "{{ .Values.cacheStorage.mountPath }}/workflow-data"
+            - name: CONTINUUM_KNIME_WORKFLOW_STORAGE_PATH
+              value: "{{ .Values.cacheStorage.mountPath }}/knime-workflows"
+            - name: CONTINUUM_KNIME_WORKSPACE_STORAGE_PATH
+              value: "{{ .Values.cacheStorage.mountPath }}/knime-workspaces"
           livenessProbe:
             exec:
               command:
@@ -142,6 +148,13 @@ spec:
             periodSeconds: 15
           resources:
             {{- toYaml .Values.featureCheminformatics.resources | nindent 12 }}
+          volumeMounts:
+            - name: cache-storage
+              mountPath: {{ .Values.cacheStorage.mountPath }}
+      volumes:
+        - name: cache-storage
+          persistentVolumeClaim:
+            claimName: {{ include "continuum-platform.feature-cheminformatics.fullname" . }}-cache
       {{- with .Values.featureCheminformatics.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
