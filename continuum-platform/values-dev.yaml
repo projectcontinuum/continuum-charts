@@ -8,8 +8,8 @@ secrets:
     username: continuum_owner
     password: dev-continuum-pass
   minio:
-    rootUser: minioadmin
-    rootPassword: minioadmin
+    rootUser: "dev-minio-root"
+    rootPassword: "dev-minio-secret"
 
 # Scale down for development
 apiServer:
@@ -30,17 +30,17 @@ orchestrationService:
       memory: 256Mi
     limits:
       cpu: 500m
-      memory: 512Mi
+      memory: 768Mi
 
 messageBridge:
   replicas: 1
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 250m
       memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
 
 workbench:
   replicas: 1

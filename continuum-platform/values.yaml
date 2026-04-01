@@ -20,7 +20,7 @@ infra:
     port: 7233
     namespace: default
   kafka:
-    brokerList: "PLAINTEXT://continuum-infra-kafka-0.continuum-infra-kafka-headless:19092,PLAINTEXT://continuum-infra-kafka-1.continuum-infra-kafka-headless:19092,PLAINTEXT://continuum-infra-kafka-2.continuum-infra-kafka-headless:19092"
+    brokerList: "PLAINTEXT://continuum-infra-kafka-0.continuum-infra-kafka-headless:19092"
   schemaRegistry:
     url: "http://continuum-infra-schema-registry:8080"
   mosquitto:

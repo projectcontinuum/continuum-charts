@@ -109,7 +109,7 @@ spec:
               port: http
             initialDelaySeconds: 10
             periodSeconds: 5
-            failureThreshold: 30
+            failureThreshold: 60
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
