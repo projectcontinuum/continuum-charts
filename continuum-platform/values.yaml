@@ -163,6 +163,27 @@ workbench:
   tolerations: []
   affinity: {}
 
+  # ---- Theia Cloud managed session -------------------------------------------
+  # When enabled, a Workspace + Session CR pair is created so the Theia Cloud
+  # operator provisions an additional workbench instance alongside the static
+  # Deployment above.
+  theiaCloud:
+    enabled: false
+    # Must match the AppDefinition name deployed by continuum-infra.
+    appDefinition: continuum-workbench
+    # Default user identity for the managed session.
+    user: "continuum-default"
+    workspace:
+      label: "Continuum Workbench"
+      storage: ""
+      options: {}
+    session:
+      sessionSecret: ""
+      envVars: {}
+      envVarsFromConfigMaps: []
+      envVarsFromSecrets: []
+      options: {}
+
 # ============================================================
 # Feature Workers (horizontally scalable)
 # ============================================================

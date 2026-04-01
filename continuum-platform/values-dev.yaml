@@ -51,6 +51,9 @@ workbench:
     limits:
       cpu: 250m
       memory: 256Mi
+  theiaCloud:
+    enabled: true
+    user: "dev-user"
 
 featureBase:
   replicas: 1

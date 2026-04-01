@@ -1,0 +1,33 @@
+{{- if .Values.workbench.theiaCloud.enabled }}
+apiVersion: theia.cloud/v1beta8
+kind: Session
+metadata:
+  name: {{ include "continuum-platform.workbench.fullname" . }}-session
+  labels:
+    app.kubernetes.io/component: workbench
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  name: {{ include "continuum-platform.workbench.fullname" . }}-session
+  appDefinition: {{ .Values.workbench.theiaCloud.appDefinition }}
+  user: {{ .Values.workbench.theiaCloud.user | quote }}
+  workspace: {{ include "continuum-platform.workbench.fullname" . }}-workspace
+  {{- with .Values.workbench.theiaCloud.session.sessionSecret }}
+  sessionSecret: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.workbench.theiaCloud.session.envVars }}
+  envVars:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.workbench.theiaCloud.session.envVarsFromConfigMaps }}
+  envVarsFromConfigMaps:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.workbench.theiaCloud.session.envVarsFromSecrets }}
+  envVarsFromSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.workbench.theiaCloud.session.options }}
+  options:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

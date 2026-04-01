@@ -1,0 +1,21 @@
+{{- if .Values.workbench.theiaCloud.enabled }}
+apiVersion: theia.cloud/v1beta5
+kind: Workspace
+metadata:
+  name: {{ include "continuum-platform.workbench.fullname" . }}-workspace
+  labels:
+    app.kubernetes.io/component: workbench
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  name: {{ include "continuum-platform.workbench.fullname" . }}-workspace
+  label: {{ .Values.workbench.theiaCloud.workspace.label | quote }}
+  appDefinition: {{ .Values.workbench.theiaCloud.appDefinition }}
+  user: {{ .Values.workbench.theiaCloud.user | quote }}
+  {{- with .Values.workbench.theiaCloud.workspace.storage }}
+  storage: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.workbench.theiaCloud.workspace.options }}
+  options:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
