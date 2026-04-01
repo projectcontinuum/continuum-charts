@@ -519,6 +519,8 @@ ingress:
       host: kafka-ui.example.com
     minioConsole:
       host: minio-console.example.com
+    mosquitto:
+      host: mqtt.example.com
 
   # TLS configuration.
   # Example:
@@ -528,4 +530,5 @@ ingress:
   #         - temporal.example.com
   #         - kafka-ui.example.com
   #         - minio-console.example.com
+  #         - mqtt.example.com
   tls: []
