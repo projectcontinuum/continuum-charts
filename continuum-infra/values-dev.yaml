@@ -282,7 +282,7 @@ theia-cloud:
   # ---- Workbench — dev overrides ---------------------------------------------
   workbench:
     image:
-      tag: "dev"
+      tag: "0.0.10"
     maxInstances: 5
     resources:
       requestsCpu: "50m"

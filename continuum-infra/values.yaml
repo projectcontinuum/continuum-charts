@@ -592,7 +592,7 @@ theia-cloud:
     appDefinition:
       name: continuum-workbench
     image:
-      repository: ghcr.io/projectcontinuum/continuum-workbench
+      repository: projectcontinuum/continuum-workbench
       tag: "latest"
     port: 8080
     uid: 1000
