@@ -585,6 +585,35 @@ theia-cloud:
   # Disabled by default to save bandwidth; enable if cold-start latency matters.
   imagePullAddons: false
 
+  # ---- Workbench AppDefinition -----------------------------------------------
+  # Configuration for the continuum-workbench AppDefinition CR that the
+  # Theia Cloud operator uses as a blueprint for IDE session pods.
+  workbench:
+    appDefinition:
+      name: continuum-workbench
+    image:
+      repository: ghcr.io/projectcontinuum/continuum-workbench
+      tag: "latest"
+    port: 8080
+    uid: 1000
+    ingressname: nginx
+    minInstances: 0
+    maxInstances: 10
+    timeout: 0
+    resources:
+      requestsCpu: "100m"
+      requestsMemory: "1000M"
+      limitsCpu: "2"
+      limitsMemory: "1200M"
+    downlinkLimit: 30000
+    uplinkLimit: 30000
+    mountPath: "/home/project/persisted"
+    monitor:
+      port: 8080
+      activityTracker:
+        timeoutAfter: 30
+        notifyAfter: 25
+
 # =============================================================================
 # Ingress — optional external access to UI services
 # =============================================================================
