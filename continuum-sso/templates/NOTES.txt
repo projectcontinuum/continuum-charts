@@ -1,0 +1,69 @@
+Thank you for installing continuum-sso!
+
+{{- if .Values.oauth2Proxy.enabled }}
+
+=== OAuth2 Proxy ===
+
+OAuth2 Proxy has been deployed with the following providers:
+{{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
+{{- if $provider.enabled }}
+  - {{ $provider.displayName | default $providerName }}: enabled
+{{- end }}
+{{- end }}
+
+Public host for OAuth callbacks: {{ .Values.oauth2Proxy.publicHost }}
+Cookie domain: {{ .Values.oauth2Proxy.cookieDomain }}
+
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+=== Ingress Resources ===
+
+The following ingress resources have been created:
+
+{{- if .Values.ingress.infra.enabled }}
+Infrastructure UIs (OAuth protected):
+{{- if .Values.ingress.infra.temporalUi.enabled }}
+  - Temporal UI:    https://{{ .Values.ingress.infra.temporalUi.host }}
+{{- end }}
+{{- if .Values.ingress.infra.kafkaUi.enabled }}
+  - Kafka UI:       https://{{ .Values.ingress.infra.kafkaUi.host }}
+{{- end }}
+{{- if .Values.ingress.infra.minioConsole.enabled }}
+  - MinIO Console:  https://{{ .Values.ingress.infra.minioConsole.host }}
+{{- end }}
+{{- if .Values.ingress.infra.mosquitto.enabled }}
+  - Mosquitto WS:   wss://{{ .Values.ingress.infra.mosquitto.host }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.ingress.platform.enabled }}
+Platform Services:
+{{- if .Values.ingress.platform.landingPage.enabled }}
+  - Landing Page:   https://{{ .Values.ingress.platform.landingPage.host }} {{ if .Values.ingress.platform.landingPage.requireAuth }}(protected){{ else }}(public){{ end }}
+{{- end }}
+{{- if .Values.ingress.platform.workbench.enabled }}
+  - Workbench:      https://{{ .Values.ingress.platform.workbench.host }} {{ if .Values.ingress.platform.workbench.requireAuth }}(protected){{ else }}(public){{ end }}
+{{- end }}
+{{- if .Values.ingress.platform.apiServer.enabled }}
+  - API Server:     https://{{ .Values.ingress.platform.apiServer.host }} {{ if .Values.ingress.platform.apiServer.requireAuth }}(protected){{ else }}(public){{ end }}
+{{- end }}
+{{- end }}
+
+OAuth2 Callback:    https://{{ .Values.ingress.oauth2.host }}/oauth2/{{ .Values.ingress.oauth2Provider }}/callback
+
+{{- end }}
+
+=== Important Notes ===
+
+1. This chart requires continuum-infra and continuum-platform to be deployed first.
+
+2. Make sure your DNS records or /etc/hosts entries point to your ingress controller.
+
+3. For production, configure proper TLS certificates via cert-manager or your cloud provider.
+
+4. OAuth credentials should be stored in Kubernetes Secrets and referenced via existingSecret.
+
+For more information, visit: https://github.com/projectcontinuum
+

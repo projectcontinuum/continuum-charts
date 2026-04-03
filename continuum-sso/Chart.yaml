@@ -1,0 +1,19 @@
+apiVersion: v2
+name: continuum-sso
+description: Single Sign-On and ingress management for Project Continuum — oauth2-proxy, protected ingresses for infrastructure and platform services
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - continuum
+  - sso
+  - authentication
+  - ingress
+  - oauth2-proxy
+maintainers:
+  - name: Project Continuum
+home: https://github.com/projectcontinuum
+annotations:
+  continuum.io/optional: "true"
+  continuum.io/requires: "continuum-infra >= 0.1.0"
+

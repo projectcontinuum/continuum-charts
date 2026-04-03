@@ -1,0 +1,145 @@
+{{- if .Values.ingress.enabled }}
+{{- if .Values.ingress.platform.enabled }}
+{{- $fullname := include "continuum-sso.fullname" . }}
+{{- $oauth2Enabled := .Values.oauth2Proxy.enabled }}
+{{- $oauth2Provider := .Values.ingress.oauth2Provider | default "google" }}
+{{- $oauth2Host := .Values.ingress.oauth2.host | default .Values.oauth2Proxy.publicHost }}
+{{- $oauth2Scheme := ternary "https" "http" (gt (len .Values.ingress.tls) 0) }}
+
+{{/* Check if the selected provider is enabled */}}
+{{- $providerEnabled := false }}
+{{- if $oauth2Enabled }}
+{{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
+{{- if and $provider.enabled (eq $providerName $oauth2Provider) }}
+{{- $providerEnabled = true }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/* Platform services that DON'T require OAuth (landing page, API server) */}}
+{{- $hasPublicServices := or (and .Values.ingress.platform.landingPage.enabled (not .Values.ingress.platform.landingPage.requireAuth)) (and .Values.ingress.platform.apiServer.enabled (not .Values.ingress.platform.apiServer.requireAuth)) }}
+{{- if $hasPublicServices }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-platform-public
+  labels:
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: platform-ingress
+  annotations:
+    {{- if eq (len .Values.ingress.tls) 0 }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    {{- end }}
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    {{- if and .Values.ingress.platform.landingPage.enabled (not .Values.ingress.platform.landingPage.requireAuth) }}
+    - host: {{ .Values.ingress.platform.landingPage.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.platform.landingPage.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "continuum-sso.platform.landing-page" . }}
+                port:
+                  number: 8080
+    {{- end }}
+    {{- if and .Values.ingress.platform.apiServer.enabled (not .Values.ingress.platform.apiServer.requireAuth) }}
+    - host: {{ .Values.ingress.platform.apiServer.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.platform.apiServer.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "continuum-sso.platform.api-server" . }}
+                port:
+                  number: 8080
+    {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+---
+{{/* Platform services that REQUIRE OAuth (workbench, and optionally others) */}}
+{{- $hasProtectedServices := or (and .Values.ingress.platform.workbench.enabled .Values.ingress.platform.workbench.requireAuth) (and .Values.ingress.platform.landingPage.enabled .Values.ingress.platform.landingPage.requireAuth) (and .Values.ingress.platform.apiServer.enabled .Values.ingress.platform.apiServer.requireAuth) }}
+{{- if and $hasProtectedServices $providerEnabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-platform-protected
+  labels:
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: platform-ingress
+  annotations:
+    {{- if eq (len .Values.ingress.tls) 0 }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    {{- end }}
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/auth-url: "http://{{ $fullname }}-oauth2-proxy-{{ $oauth2Provider }}.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/{{ $oauth2Provider }}/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "{{ $oauth2Scheme }}://{{ $oauth2Host }}/oauth2/{{ $oauth2Provider }}/start?rd={{ $oauth2Scheme }}://$host$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Groups"
+    nginx.ingress.kubernetes.io/auth-signin-redirect-param: "rd"
+    nginx.ingress.kubernetes.io/proxy-set-headers: "{{ .Release.Namespace }}/{{ $fullname }}-custom-headers"
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    {{- if and .Values.ingress.platform.workbench.enabled .Values.ingress.platform.workbench.requireAuth }}
+    - host: {{ .Values.ingress.platform.workbench.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.platform.workbench.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "continuum-sso.platform.workbench" . }}
+                port:
+                  number: 8080
+    {{- end }}
+    {{- if and .Values.ingress.platform.landingPage.enabled .Values.ingress.platform.landingPage.requireAuth }}
+    - host: {{ .Values.ingress.platform.landingPage.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.platform.landingPage.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "continuum-sso.platform.landing-page" . }}
+                port:
+                  number: 8080
+    {{- end }}
+    {{- if and .Values.ingress.platform.apiServer.enabled .Values.ingress.platform.apiServer.requireAuth }}
+    - host: {{ .Values.ingress.platform.apiServer.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.platform.apiServer.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "continuum-sso.platform.api-server" . }}
+                port:
+                  number: 8080
+    {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+

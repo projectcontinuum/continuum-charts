@@ -1,0 +1,117 @@
+# =============================================================================
+# Project Continuum — SSO Development Environment Overrides
+# =============================================================================
+# Usage:
+#   helm install continuum-sso ./continuum-sso -f continuum-sso/values.yaml -f continuum-sso/values-dev.yaml -n continuum-dev
+#
+# This file supplies development-specific configurations for SSO and ingress.
+# Assumes continuum-infra and continuum-platform are deployed with their dev values.
+#
+# WARNING: The configurations below are for DEVELOPMENT ONLY.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Service References — must match dev release names
+# -----------------------------------------------------------------------------
+infraReleaseName: continuum-infra
+platformReleaseName: continuum-platform
+
+# -----------------------------------------------------------------------------
+# OAuth2 Proxy — development configuration
+# -----------------------------------------------------------------------------
+oauth2Proxy:
+  enabled: true
+  publicHost: "auth.192.168.49.2.nip.io"
+  cookieDomain: "192.168.49.2.nip.io"
+  cookie:
+    existingSecret: oauth2-proxy-cookie
+    secure: true  # Enable secure cookies (requires HTTPS)
+  providers:
+    google:
+      enabled: true
+      existingSecret: oauth2-proxy-google
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+    github:
+      enabled: false
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+    microsoft:
+      enabled: false
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+    linkedin:
+      enabled: false
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
+# -----------------------------------------------------------------------------
+# Ingress — development configuration with local nip.io domain
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  oauth2Provider: "google"
+
+  # TLS configuration with self-signed certificate for local development
+  tls:
+    - secretName: continuum-tls
+      hosts:
+        - "*.192.168.49.2.nip.io"
+
+  # Infrastructure service hosts
+  infra:
+    enabled: true
+    temporalUi:
+      enabled: true
+      host: "temporal.192.168.49.2.nip.io"
+    kafkaUi:
+      enabled: true
+      host: "kafka-ui.192.168.49.2.nip.io"
+    minioConsole:
+      enabled: true
+      host: "minio.192.168.49.2.nip.io"
+    mosquitto:
+      enabled: true
+      host: "mqtt.192.168.49.2.nip.io"
+
+  # Platform service hosts
+  platform:
+    enabled: true
+    landingPage:
+      enabled: true
+      host: "continuum.192.168.49.2.nip.io"
+      requireAuth: false
+    workbench:
+      enabled: true
+      host: "app.192.168.49.2.nip.io"
+      requireAuth: true
+    apiServer:
+      enabled: true
+      host: "api.192.168.49.2.nip.io"
+      requireAuth: false
+
+  # OAuth2 callback host
+  oauth2:
+    host: "auth.192.168.49.2.nip.io"
+

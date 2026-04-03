@@ -1,6 +1,6 @@
 {{- if .Values.oauth2Proxy.enabled }}
 {{- $root := . }}
-{{- $fullname := include "continuum-infra.fullname" . }}
+{{- $fullname := include "continuum-sso.fullname" . }}
 {{- $service := .Values.oauth2Proxy.service }}
 
 {{/* Check if any provider is enabled */}}
@@ -18,7 +18,7 @@ kind: Ingress
 metadata:
   name: {{ $fullname }}-oauth2-proxy
   labels:
-    {{- include "continuum-infra.labels" $root | nindent 4 }}
+    {{- include "continuum-sso.labels" $root | nindent 4 }}
     app.kubernetes.io/component: oauth2-proxy
   annotations:
     {{- if eq (len .Values.ingress.tls) 0 }}
@@ -32,8 +32,7 @@ spec:
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
   rules:
-    {{- /* Use the oauth2Proxy publicHost or the ingress hosts.oauth2 or fall back to the first available host */}}
-    {{- $host := .Values.oauth2Proxy.publicHost | default ((.Values.ingress.hosts.oauth2).host | default (index .Values.ingress.hosts "temporalUi").host) }}
+    {{- $host := .Values.ingress.oauth2.host | default .Values.oauth2Proxy.publicHost }}
     - host: {{ $host }}
       http:
         paths:
@@ -55,5 +54,4 @@ spec:
   {{- end }}
 {{- end }}
 {{- end }}
-
 

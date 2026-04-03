@@ -1,12 +1,13 @@
 # Continuum Helm Charts
 
-This directory contains two Helm charts for deploying Project Continuum on Kubernetes:
+This directory contains three Helm charts for deploying Project Continuum on Kubernetes:
 
 
-| Chart                | Description                                                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `continuum-infra`    | Infrastructure layer — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO                                       |
-| `continuum-platform` | Application layer — API Server, Orchestration Service, Message Bridge, Workbench, Feature Base Worker, Feature Cheminformatics Worker |
+| Chart                | Description                                                                                                                            | Required |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `continuum-infra`    | Core infrastructure services — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO                               | Yes      |
+| `continuum-platform` | Application services — API Server, Orchestration Service, Message Bridge, Workbench, Feature Workers                                  | Yes      |
+| `continuum-sso`      | Optional Single Sign-On & ingress — OAuth2 Proxy, protected ingresses for infrastructure and platform UIs                             | No       |
 
 ## Prerequisites
 
@@ -247,32 +248,54 @@ Open workbench in your browser: [Continuum-Workbench](http://localhost:3002/#/ho
 
 **Ingress (production):**
 
-Enable ingress in both charts' values files and configure your domain names:
+For external access with OAuth2 authentication, deploy the optional `continuum-sso` chart:
+
+```bash
+# Install SSO and ingress management
+helm install continuum-sso ./continuum-sso \
+  -n continuum \
+  -f continuum-sso/values-dev.yaml \
+  --wait
+```
+
+Configure your domain names in the sso chart values:
 
 ```yaml
-# Infrastructure ingress
+# continuum-sso values
 ingress:
   enabled: true
   className: nginx
-  hosts:
+  oauth2Provider: "google"
+  
+  infra:
+    enabled: true
     temporalUi:
       host: temporal.yourdomain.com
     kafkaUi:
       host: kafka-ui.yourdomain.com
     minioConsole:
       host: minio-console.yourdomain.com
-```
-
-```yaml
-# Platform ingress
-ingress:
-  enabled: true
-  className: nginx
-  hosts:
-    workbench:
+  
+  platform:
+    enabled: true
+    landingPage:
       host: continuum.yourdomain.com
+      requireAuth: false
+    workbench:
+      host: app.yourdomain.com
+      requireAuth: true
     apiServer:
-      host: api.continuum.yourdomain.com
+      host: api.yourdomain.com
+      requireAuth: false
+
+oauth2Proxy:
+  enabled: true
+  publicHost: "auth.yourdomain.com"
+  cookieDomain: "yourdomain.com"
+  providers:
+    google:
+      enabled: true
+      existingSecret: my-google-oauth-secret
 ```
 
 ## Smoke Test

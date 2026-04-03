@@ -1,20 +1,34 @@
 {{- if .Values.ingress.enabled }}
-{{- $fullname := include "continuum-infra.fullname" . }}
-{{- $oauth2Enabled := and .Values.oauth2Proxy.enabled .Values.ingress.oauth2Auth.enabled }}
-{{- $oauth2Provider := .Values.ingress.oauth2Auth.provider | default "google" }}
-{{- $oauth2Host := .Values.oauth2Proxy.publicHost | default ((.Values.ingress.hosts.oauth2).host | default "localhost") }}
+{{- if .Values.ingress.infra.enabled }}
+{{- $fullname := include "continuum-sso.fullname" . }}
+{{- $oauth2Enabled := .Values.oauth2Proxy.enabled }}
+{{- $oauth2Provider := .Values.ingress.oauth2Provider | default "google" }}
+{{- $oauth2Host := .Values.ingress.oauth2.host | default .Values.oauth2Proxy.publicHost }}
 {{- $oauth2Scheme := ternary "https" "http" (gt (len .Values.ingress.tls) 0) }}
+
+{{/* Check if the selected provider is enabled */}}
+{{- $providerEnabled := false }}
+{{- if $oauth2Enabled }}
+{{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
+{{- if and $provider.enabled (eq $providerName $oauth2Provider) }}
+{{- $providerEnabled = true }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/* Main Infrastructure UIs Ingress */}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ $fullname }}-uis
+  name: {{ $fullname }}-infra-uis
   labels:
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: infra-ingress
   annotations:
     {{- if eq (len .Values.ingress.tls) 0 }}
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     {{- end }}
-    {{- if $oauth2Enabled }}
+    {{- if $providerEnabled }}
     nginx.ingress.kubernetes.io/auth-url: "http://{{ $fullname }}-oauth2-proxy-{{ $oauth2Provider }}.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/{{ $oauth2Provider }}/auth"
     nginx.ingress.kubernetes.io/auth-signin: "{{ $oauth2Scheme }}://{{ $oauth2Host }}/oauth2/{{ $oauth2Provider }}/start?rd={{ $oauth2Scheme }}://$host$escaped_request_uri"
     nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Groups"
@@ -29,39 +43,39 @@ spec:
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
   rules:
-    {{- if and .Values.temporal.enabled .Values.temporal.web.enabled .Values.ingress.hosts.temporalUi }}
-    - host: {{ .Values.ingress.hosts.temporalUi.host }}
+    {{- if .Values.ingress.infra.temporalUi.enabled }}
+    - host: {{ .Values.ingress.infra.temporalUi.host }}
       http:
         paths:
-          - path: {{ .Values.ingress.hosts.temporalUi.path | default "/" }}
+          - path: {{ .Values.ingress.infra.temporalUi.path | default "/" }}
             pathType: Prefix
             backend:
               service:
-                name: {{ .Release.Name }}-temporal-web
+                name: {{ include "continuum-sso.infra.temporal-web" . }}
                 port:
                   number: 8080
     {{- end }}
-    {{- if and .Values.kafkaUi.enabled .Values.ingress.hosts.kafkaUi }}
-    - host: {{ .Values.ingress.hosts.kafkaUi.host }}
+    {{- if .Values.ingress.infra.kafkaUi.enabled }}
+    - host: {{ .Values.ingress.infra.kafkaUi.host }}
       http:
         paths:
-          - path: {{ .Values.ingress.hosts.kafkaUi.path | default "/" }}
+          - path: {{ .Values.ingress.infra.kafkaUi.path | default "/" }}
             pathType: Prefix
             backend:
               service:
-                name: {{ include "continuum-infra.kafka-ui.fullname" . }}
+                name: {{ include "continuum-sso.infra.kafka-ui" . }}
                 port:
                   number: 8080
     {{- end }}
-    {{- if and .Values.minio.enabled .Values.ingress.hosts.minioConsole }}
-    - host: {{ .Values.ingress.hosts.minioConsole.host }}
+    {{- if .Values.ingress.infra.minioConsole.enabled }}
+    - host: {{ .Values.ingress.infra.minioConsole.host }}
       http:
         paths:
-          - path: {{ .Values.ingress.hosts.minioConsole.path | default "/" }}
+          - path: {{ .Values.ingress.infra.minioConsole.path | default "/" }}
             pathType: Prefix
             backend:
               service:
-                name: {{ include "continuum-infra.minio.fullname" . }}
+                name: {{ include "continuum-sso.infra.minio" . }}
                 port:
                   number: 9001
     {{- end }}
@@ -71,13 +85,14 @@ spec:
   {{- end }}
 ---
 {{/* Mosquitto WebSocket gets a separate Ingress for long-lived connection annotations */}}
-{{- if and .Values.mosquitto.enabled .Values.ingress.hosts.mosquitto }}
+{{- if .Values.ingress.infra.mosquitto.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "continuum-infra.fullname" . }}-mosquitto
+  name: {{ $fullname }}-mosquitto
   labels:
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: infra-ingress
   annotations:
     {{- if eq (len .Values.ingress.tls) 0 }}
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
@@ -93,19 +108,21 @@ spec:
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.hosts.mosquitto.host }}
+    - host: {{ .Values.ingress.infra.mosquitto.host }}
       http:
         paths:
-          - path: {{ .Values.ingress.hosts.mosquitto.path | default "/" }}
+          - path: {{ .Values.ingress.infra.mosquitto.path | default "/" }}
             pathType: Prefix
             backend:
               service:
-                name: {{ include "continuum-infra.fullname" . }}-mosquitto
+                name: {{ include "continuum-sso.infra.mosquitto" . }}
                 port:
-                  number: {{ .Values.mosquitto.config.websocketPort | default 1884 }}
+                  number: 1884
   {{- with .Values.ingress.tls }}
   tls:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 {{- end }}
 {{- end }}
+{{- end }}
+

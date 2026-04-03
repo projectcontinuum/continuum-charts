@@ -99,21 +99,3 @@ Format: PLAINTEXT://kafka-0.kafka-headless:19092,PLAINTEXT://kafka-1.kafka-headl
 {{- join "," $brokers -}}
 {{- end }}
 
-{{/* ======================== OAuth2 Proxy ======================== */}}
-
-{{- define "continuum-infra.oauth2-proxy.fullname" -}}
-{{- include "continuum-infra.fullname" . -}}-oauth2-proxy
-{{- end }}
-
-{{/*
-Generate a list of enabled OAuth2 providers
-*/}}
-{{- define "continuum-infra.oauth2-proxy.enabledProviders" -}}
-{{- $enabled := list -}}
-{{- range $name, $provider := .Values.oauth2Proxy.providers -}}
-{{- if $provider.enabled -}}
-{{- $enabled = append $enabled $name -}}
-{{- end -}}
-{{- end -}}
-{{- join "," $enabled -}}
-{{- end }}

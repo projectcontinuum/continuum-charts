@@ -1,9 +1,7 @@
 {{- if .Values.oauth2Proxy.enabled }}
 {{- $root := . }}
-{{- $fullname := include "continuum-infra.fullname" . }}
+{{- $fullname := include "continuum-sso.fullname" . }}
 {{- $globalCookie := .Values.oauth2Proxy.cookie }}
-{{- $globalUpstream := .Values.oauth2Proxy.upstreamUrl }}
-{{- $globalEmailDomains := .Values.oauth2Proxy.emailDomains }}
 {{- $image := .Values.oauth2Proxy.image }}
 {{- $service := .Values.oauth2Proxy.service }}
 {{- $scheduling := dict "nodeSelector" .Values.oauth2Proxy.nodeSelector "tolerations" .Values.oauth2Proxy.tolerations "affinity" .Values.oauth2Proxy.affinity }}
@@ -17,20 +15,20 @@ kind: Deployment
 metadata:
   name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
   labels:
-    {{- include "continuum-infra.labels" $root | nindent 4 }}
+    {{- include "continuum-sso.labels" $root | nindent 4 }}
     app.kubernetes.io/component: oauth2-proxy
     app.kubernetes.io/oauth2-provider: {{ $providerName }}
 spec:
   replicas: {{ $provider.replicas | default 1 }}
   selector:
     matchLabels:
-      {{- include "continuum-infra.selectorLabels" $root | nindent 6 }}
+      {{- include "continuum-sso.selectorLabels" $root | nindent 6 }}
       app.kubernetes.io/component: oauth2-proxy
       app.kubernetes.io/oauth2-provider: {{ $providerName }}
   template:
     metadata:
       labels:
-        {{- include "continuum-infra.labels" $root | nindent 8 }}
+        {{- include "continuum-sso.labels" $root | nindent 8 }}
         app.kubernetes.io/component: oauth2-proxy
         app.kubernetes.io/oauth2-provider: {{ $providerName }}
       annotations:
@@ -57,9 +55,9 @@ spec:
             # Set X-Auth-Request-* headers for nginx to forward to backends
             - --set-xauthrequest=true
             # Whitelist domains for redirect after authentication
-            - --whitelist-domain=.{{ $root.Values.oauth2Proxy.cookieDomain | default "192.168.49.2.nip.io" }}
+            - --whitelist-domain=.{{ $root.Values.oauth2Proxy.cookieDomain | default "localhost" }}
             # Cookie domain to share authentication across subdomains
-            - --cookie-domain=.{{ $root.Values.oauth2Proxy.cookieDomain | default "192.168.49.2.nip.io" }}
+            - --cookie-domain=.{{ $root.Values.oauth2Proxy.cookieDomain | default "localhost" }}
             # CSRF cookie settings - use per-request CSRF to avoid token mismatch issues
             - --cookie-csrf-per-request=true
             - --cookie-csrf-expire=5m
@@ -68,7 +66,7 @@ spec:
             - --email-domain={{ . }}
             {{- end }}
             {{- else }}
-            {{- range $globalEmailDomains }}
+            {{- range $root.Values.oauth2Proxy.emailDomains }}
             - --email-domain={{ . }}
             {{- end }}
             {{- end }}

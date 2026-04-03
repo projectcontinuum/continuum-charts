@@ -270,23 +270,3 @@ featureCheminformatics:
   tolerations: []
   affinity: {}
 
-# ============================================================
-# Ingress (Landing Page, Workbench + API Server)
-# ============================================================
-ingress:
-  enabled: false
-  className: nginx
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-  hosts:
-    landingPage:
-      host: continuum.example.com
-      path: /
-    workbench:
-      host: app.continuum.example.com
-      path: /
-    apiServer:
-      host: api.continuum.example.com
-      path: /
-  tls: []
