@@ -1,0 +1,56 @@
+{{- if .Values.oauth2Proxy.enabled }}
+{{- $root := . }}
+{{- $fullname := include "continuum-infra.fullname" . }}
+{{- $service := .Values.oauth2Proxy.service }}
+
+{{/* Check if any provider is enabled */}}
+{{- $anyProviderEnabled := false }}
+{{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
+{{- if $provider.enabled }}
+{{- $anyProviderEnabled = true }}
+{{- end }}
+{{- end }}
+
+{{- if and .Values.ingress.enabled $anyProviderEnabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-oauth2-proxy
+  labels:
+    {{- include "continuum-infra.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: oauth2-proxy
+  annotations:
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    {{- /* Use the oauth2Proxy publicHost or the ingress hosts.oauth2 or fall back to the first available host */}}
+    {{- $host := .Values.oauth2Proxy.publicHost | default ((.Values.ingress.hosts.oauth2).host | default (index .Values.ingress.hosts "temporalUi").host) }}
+    - host: {{ $host }}
+      http:
+        paths:
+          {{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
+          {{- if $provider.enabled }}
+          # OAuth2 callback path for {{ $provider.displayName | default $providerName }}
+          - path: /oauth2/{{ $providerName }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
+                port:
+                  number: {{ $service.port }}
+          {{- end }}
+          {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+

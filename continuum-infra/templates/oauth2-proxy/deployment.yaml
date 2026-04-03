@@ -1,0 +1,169 @@
+{{- if .Values.oauth2Proxy.enabled }}
+{{- $root := . }}
+{{- $fullname := include "continuum-infra.fullname" . }}
+{{- $globalCookie := .Values.oauth2Proxy.cookie }}
+{{- $globalUpstream := .Values.oauth2Proxy.upstreamUrl }}
+{{- $globalEmailDomains := .Values.oauth2Proxy.emailDomains }}
+{{- $image := .Values.oauth2Proxy.image }}
+{{- $service := .Values.oauth2Proxy.service }}
+{{- $scheduling := dict "nodeSelector" .Values.oauth2Proxy.nodeSelector "tolerations" .Values.oauth2Proxy.tolerations "affinity" .Values.oauth2Proxy.affinity }}
+
+{{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
+{{- if $provider.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
+  labels:
+    {{- include "continuum-infra.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: oauth2-proxy
+    app.kubernetes.io/oauth2-provider: {{ $providerName }}
+spec:
+  replicas: {{ $provider.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "continuum-infra.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: oauth2-proxy
+      app.kubernetes.io/oauth2-provider: {{ $providerName }}
+  template:
+    metadata:
+      labels:
+        {{- include "continuum-infra.labels" $root | nindent 8 }}
+        app.kubernetes.io/component: oauth2-proxy
+        app.kubernetes.io/oauth2-provider: {{ $providerName }}
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/oauth2-proxy/secret.yaml") $root | sha256sum }}
+    spec:
+      {{- with $root.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: oauth2-proxy
+          image: "{{ $image.repository }}:{{ $image.tag }}"
+          imagePullPolicy: {{ $image.pullPolicy | default $root.Values.global.imagePullPolicy }}
+          args:
+            - --http-address=0.0.0.0:4180
+            - --provider={{ $provider.providerType }}
+            - --redirect-url=https://{{ $root.Values.oauth2Proxy.publicHost | default "localhost" }}{{ $provider.callbackPath }}
+            - --upstream={{ $provider.upstreamUrl | default $globalUpstream }}
+            {{- if $provider.emailDomains }}
+            {{- range $provider.emailDomains }}
+            - --email-domain={{ . }}
+            {{- end }}
+            {{- else }}
+            {{- range $globalEmailDomains }}
+            - --email-domain={{ . }}
+            {{- end }}
+            {{- end }}
+            # Cookie configuration
+            - --cookie-name=_oauth2_proxy_{{ $providerName }}
+            - --cookie-secure={{ $globalCookie.secure }}
+            - --cookie-expire={{ $globalCookie.expire }}
+            - --cookie-refresh={{ $globalCookie.refresh }}
+            # Provider-specific configuration
+            {{- if eq $provider.providerType "azure" }}
+            - --azure-tenant={{ $provider.azureTenant | default "common" }}
+            {{- end }}
+            {{- if eq $provider.providerType "github" }}
+            {{- if $provider.githubOrg }}
+            - --github-org={{ $provider.githubOrg }}
+            {{- end }}
+            {{- if $provider.githubTeam }}
+            - --github-team={{ $provider.githubTeam }}
+            {{- end }}
+            {{- end }}
+            {{- if eq $provider.providerType "oidc" }}
+            {{- if $provider.oidcIssuerUrl }}
+            - --oidc-issuer-url={{ $provider.oidcIssuerUrl }}
+            {{- end }}
+            {{- if $provider.loginUrl }}
+            - --login-url={{ $provider.loginUrl }}
+            {{- end }}
+            {{- if $provider.redeemUrl }}
+            - --redeem-url={{ $provider.redeemUrl }}
+            {{- end }}
+            {{- if $provider.profileUrl }}
+            - --profile-url={{ $provider.profileUrl }}
+            {{- end }}
+            {{- if $provider.scope }}
+            - --scope={{ $provider.scope }}
+            {{- end }}
+            {{- end }}
+            # Additional args
+            {{- range $provider.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          env:
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  {{- if $provider.existingSecret }}
+                  name: {{ $provider.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
+                  {{- end }}
+                  key: client-id
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  {{- if $provider.existingSecret }}
+                  name: {{ $provider.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
+                  {{- end }}
+                  key: client-secret
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  {{- if $globalCookie.existingSecret }}
+                  name: {{ $globalCookie.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-oauth2-proxy-cookie
+                  {{- end }}
+                  key: cookie-secret
+          ports:
+            - name: http
+              containerPort: 4180
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          {{- with $provider.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 2000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      {{- with $scheduling.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $scheduling.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $scheduling.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+

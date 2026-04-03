@@ -1,0 +1,31 @@
+{{- if .Values.oauth2Proxy.enabled }}
+{{- $root := . }}
+{{- $fullname := include "continuum-infra.fullname" . }}
+{{- $service := .Values.oauth2Proxy.service }}
+
+{{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
+{{- if $provider.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
+  labels:
+    {{- include "continuum-infra.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: oauth2-proxy
+    app.kubernetes.io/oauth2-provider: {{ $providerName }}
+spec:
+  type: {{ $service.type }}
+  ports:
+    - port: {{ $service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "continuum-infra.selectorLabels" $root | nindent 4 }}
+    app.kubernetes.io/component: oauth2-proxy
+    app.kubernetes.io/oauth2-provider: {{ $providerName }}
+{{- end }}
+{{- end }}
+{{- end }}
+

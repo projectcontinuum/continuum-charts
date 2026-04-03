@@ -521,6 +521,9 @@ ingress:
       host: minio-console.example.com
     mosquitto:
       host: mqtt.example.com
+    # OAuth2 proxy endpoints (all providers share this host)
+    oauth2:
+      host: app.example.com
 
   # TLS configuration.
   # Example:
@@ -532,3 +535,188 @@ ingress:
   #         - minio-console.example.com
   #         - mqtt.example.com
   tls: []
+
+  # -----------------------------------------------------------------------------
+  # OAuth2 Authentication for UI Ingresses
+  # -----------------------------------------------------------------------------
+  # When enabled, the UI ingresses (Temporal, Kafka UI, MinIO) will require
+  # authentication via oauth2-proxy before allowing access.
+  oauth2Auth:
+    # Set to true to protect UI ingresses with oauth2-proxy authentication.
+    enabled: false
+    # Which oauth2-proxy provider to use for authentication.
+    # Must match one of the enabled providers in oauth2Proxy.providers.
+    provider: "google"
+
+# =============================================================================
+# OAuth2 Proxy — multi-provider authentication
+# =============================================================================
+# Deploy multiple instances of oauth2-proxy, one per OIDC provider.
+# Each provider gets its own deployment, service, and callback path.
+# The ingress is configured to route /oauth2/<provider>/* to the corresponding
+# oauth2-proxy instance.
+# -----------------------------------------------------------------------------
+oauth2Proxy:
+  enabled: false
+
+  # Public hostname used for OAuth redirect URIs. This should match your
+  # application's public domain.
+  publicHost: "app.example.com"
+
+  # Common oauth2-proxy image used by all provider instances.
+  image:
+    repository: quay.io/oauth2-proxy/oauth2-proxy
+    tag: "v7.6.0"
+    # pullPolicy inherits from global.imagePullPolicy unless overridden here.
+
+  # Cookie configuration shared across all providers.
+  cookie:
+    # Secret used to encrypt the session cookie. Must be 16, 24, or 32 bytes.
+    # Leave empty here and supply via --set or existingSecret in production.
+    secret: ""
+    # Name of an existing Secret containing the key `cookie-secret`.
+    existingSecret: ""
+    # If true, cookies are only sent over HTTPS.
+    secure: true
+    # Cookie expiration time.
+    expire: "168h"
+    # Cookie refresh interval.
+    refresh: "1h"
+
+  # Upstream service that oauth2-proxy forwards authenticated requests to.
+  # This is typically your main application or API gateway.
+  # Can be overridden per-provider.
+  upstreamUrl: "http://continuum-platform-api:8080/"
+
+  # Emails/domains allowed to authenticate. Use "*" to allow all.
+  # Can be overridden per-provider.
+  emailDomains:
+    - "*"
+
+  # -----------------------------------------------------------------------------
+  # Provider-specific configurations
+  # Each provider runs as a separate oauth2-proxy deployment.
+  # -----------------------------------------------------------------------------
+  providers:
+    # ---- Google OIDC --------------------------------------------------------
+    google:
+      enabled: false
+      # Display name for logs and debugging.
+      displayName: "Google"
+      # OAuth2 provider type (google, github, azure, linkedin, oidc, etc.)
+      providerType: "google"
+      # OAuth2 client credentials.
+      # Leave empty here and supply via --set or existingSecret in production.
+      clientId: ""
+      clientSecret: ""
+      # Name of an existing Secret containing keys: client-id, client-secret.
+      existingSecret: ""
+      # Callback path for this provider. Must match the redirect URI in the
+      # provider's OAuth app configuration.
+      callbackPath: "/oauth2/google/callback"
+      # OIDC issuer URL (not required for Google as it's built-in).
+      # oidcIssuerUrl: ""
+      # Override email domains for this provider.
+      # emailDomains: []
+      # Override upstream URL for this provider.
+      # upstreamUrl: ""
+      # Additional command-line arguments for this provider's oauth2-proxy.
+      extraArgs: []
+      # Resource requests and limits for this provider's deployment.
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+      # Number of replicas.
+      replicas: 1
+
+    # ---- GitHub OIDC --------------------------------------------------------
+    github:
+      enabled: false
+      displayName: "GitHub"
+      providerType: "github"
+      clientId: ""
+      clientSecret: ""
+      existingSecret: ""
+      callbackPath: "/oauth2/github/callback"
+      # Restrict to specific GitHub organization(s).
+      # githubOrg: ""
+      # Restrict to specific GitHub team(s) within the organization.
+      # githubTeam: ""
+      extraArgs: []
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+      replicas: 1
+
+    # ---- Microsoft / Azure AD OIDC ------------------------------------------
+    microsoft:
+      enabled: false
+      displayName: "Microsoft"
+      providerType: "azure"
+      clientId: ""
+      clientSecret: ""
+      existingSecret: ""
+      callbackPath: "/oauth2/microsoft/callback"
+      # Azure AD tenant ID. Use "common" for multi-tenant apps.
+      azureTenant: "common"
+      extraArgs: []
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+      replicas: 1
+
+    # ---- LinkedIn OIDC ------------------------------------------------------
+    linkedin:
+      enabled: false
+      displayName: "LinkedIn"
+      # LinkedIn uses generic OIDC provider type.
+      providerType: "oidc"
+      clientId: ""
+      clientSecret: ""
+      existingSecret: ""
+      callbackPath: "/oauth2/linkedin/callback"
+      # LinkedIn OIDC issuer URL.
+      oidcIssuerUrl: "https://www.linkedin.com/oauth"
+      # LinkedIn authorization and token endpoints (since it's not standard OIDC).
+      loginUrl: "https://www.linkedin.com/oauth/v2/authorization"
+      redeemUrl: "https://www.linkedin.com/oauth/v2/accessToken"
+      profileUrl: "https://api.linkedin.com/v2/userinfo"
+      # Scopes required for LinkedIn.
+      scope: "openid profile email"
+      extraArgs:
+        - "--skip-oidc-discovery=true"
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+      replicas: 1
+
+  # -----------------------------------------------------------------------------
+  # Service configuration (shared across all provider instances)
+  # -----------------------------------------------------------------------------
+  service:
+    type: ClusterIP
+    port: 4180
+
+  # -----------------------------------------------------------------------------
+  # Pod scheduling (shared across all provider instances)
+  # -----------------------------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+

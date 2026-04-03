@@ -228,3 +228,78 @@ minio:
     limits:
       cpu: 500m
       memory: 512Mi
+
+# -----------------------------------------------------------------------------
+# OAuth2 Proxy — disabled by default in dev, but showing example configuration
+# -----------------------------------------------------------------------------
+# To enable OAuth2 authentication in dev, set enabled: true and configure
+# the desired providers with your OAuth app credentials.
+#
+# Example: Enable Google OAuth only
+#   oauth2Proxy:
+#     enabled: true
+#     publicHost: "dev.continuum.local"
+#     cookie:
+#       secure: false  # Allow HTTP in local dev
+#       secret: "dev-cookie-secret-32bytes!"
+#     providers:
+#       google:
+#         enabled: true
+#         clientId: "your-google-client-id"
+#         clientSecret: "your-google-client-secret"
+# -----------------------------------------------------------------------------
+oauth2Proxy:
+  enabled: true
+  publicHost: "auth.192.168.49.2.nip.io"  # Use your local cluster's IP or a wildcard DNS for dev
+  cookie:
+    existingSecret: oauth2-proxy-cookie
+  providers:
+    google:
+      enabled: true
+      existingSecret: oauth2-proxy-google
+    github:
+      enabled: false
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+    microsoft:
+      enabled: false
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+    linkedin:
+      enabled: false
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  # Enable OAuth2 authentication for UI ingresses
+  oauth2Auth:
+    enabled: true
+    provider: "google"
+  hosts:
+    temporalUi:
+      host: "temporal.192.168.49.2.nip.io"
+    kafkaUi:
+      host: "kafka-ui.192.168.49.2.nip.io"
+    minioConsole:
+      host: "minio.192.168.49.2.nip.io"
+    mosquitto:
+      host: "mqtt.192.168.49.2.nip.io"
+    oauth2:
+      host: "auth.192.168.49.2.nip.io"
