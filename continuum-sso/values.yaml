@@ -1,10 +1,8 @@
 # =============================================================================
-# Project Continuum — SSO and Ingress Helm Values
+# Project Continuum — SSO Helm Values
 # =============================================================================
 # Default values for the continuum-sso chart.
-# This chart deploys optional authentication and ingress components:
-#   - OAuth2 Proxy       (multi-provider authentication)
-#   - Ingress resources  (protected access to infrastructure and platform UIs)
+# This chart deploys OAuth2 Proxy for Single Sign-On authentication.
 #
 # Override per-environment with values-<env>.yaml (e.g. values-dev.yaml).
 # =============================================================================
@@ -20,21 +18,10 @@ global:
   imagePullSecrets: []
 
 # =============================================================================
-# Service References
-# =============================================================================
-# These MUST match the release names and service names from continuum-infra
-# and continuum-platform charts.
-# -----------------------------------------------------------------------------
-infraReleaseName: continuum-infra
-platformReleaseName: continuum-platform
-
-# =============================================================================
 # OAuth2 Proxy — multi-provider authentication
 # =============================================================================
 # Deploy multiple instances of oauth2-proxy, one per OIDC provider.
 # Each provider gets its own deployment, service, and callback path.
-# The ingress is configured to route /oauth2/<provider>/* to the corresponding
-# oauth2-proxy instance.
 # -----------------------------------------------------------------------------
 oauth2Proxy:
   enabled: true
@@ -197,98 +184,4 @@ oauth2Proxy:
   tolerations: []
   affinity: {}
 
-# =============================================================================
-# Ingress — external access to UI services with OAuth protection
-# =============================================================================
-# When enabled, Ingress resources are created for infrastructure UIs and
-# platform services, protected by oauth2-proxy authentication.
-# Configure TLS and annotations to match your ingress controller.
-# -----------------------------------------------------------------------------
-ingress:
-  enabled: true
-
-  # Ingress class to use (e.g. nginx, traefik, alb).
-  className: nginx
-
-  # Extra annotations applied to every Ingress resource.
-  # Example:
-  #   annotations:
-  #     cert-manager.io/cluster-issuer: letsencrypt-prod
-  annotations: {}
-
-  # Which oauth2-proxy provider to use for authentication.
-  # Must match one of the enabled providers in oauth2Proxy.providers.
-  oauth2Provider: "google"
-
-  # TLS configuration.
-  # Example:
-  #   tls:
-  #     - secretName: continuum-tls
-  #       hosts:
-  #         - "*.example.com"
-  tls: []
-
-  # -----------------------------------------------------------------------------
-  # Infrastructure service hosts (from continuum-infra)
-  # These point to services deployed by continuum-infra chart.
-  # -----------------------------------------------------------------------------
-  infra:
-    # Whether to create ingresses for infrastructure UIs
-    enabled: true
-
-    temporalUi:
-      enabled: true
-      host: temporal.example.com
-      path: /
-
-    kafkaUi:
-      enabled: true
-      host: kafka-ui.example.com
-      path: /
-
-    minioConsole:
-      enabled: true
-      host: minio.example.com
-      path: /
-
-    mosquitto:
-      # WebSocket access to MQTT broker
-      enabled: true
-      host: mqtt.example.com
-      path: /
-
-  # -----------------------------------------------------------------------------
-  # Platform service hosts (from continuum-platform)
-  # These point to services deployed by continuum-platform chart.
-  # -----------------------------------------------------------------------------
-  platform:
-    # Whether to create ingresses for platform services
-    enabled: true
-
-    landingPage:
-      enabled: true
-      host: continuum.example.com
-      path: /
-      # Landing page typically doesn't require OAuth
-      requireAuth: false
-
-    workbench:
-      enabled: true
-      host: app.example.com
-      path: /
-      requireAuth: true
-
-    apiServer:
-      enabled: true
-      host: api.example.com
-      path: /
-      # API server typically uses its own auth mechanisms
-      requireAuth: false
-
-  # -----------------------------------------------------------------------------
-  # OAuth2 Proxy callback host
-  # This is where oauth2-proxy callback endpoints are exposed.
-  # -----------------------------------------------------------------------------
-  oauth2:
-    host: auth.example.com
 

@@ -5,7 +5,7 @@
 {{- $image := .Values.oauth2Proxy.image }}
 {{- $service := .Values.oauth2Proxy.service }}
 {{- $scheduling := dict "nodeSelector" .Values.oauth2Proxy.nodeSelector "tolerations" .Values.oauth2Proxy.tolerations "affinity" .Values.oauth2Proxy.affinity }}
-{{- $scheme := ternary "https" "http" (gt (len .Values.ingress.tls) 0) }}
+{{- $scheme := ternary "https" "http" $globalCookie.secure }}
 
 {{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
 {{- if $provider.enabled }}

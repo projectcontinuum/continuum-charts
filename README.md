@@ -7,7 +7,7 @@ This directory contains three Helm charts for deploying Project Continuum on Kub
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `continuum-infra`    | Core infrastructure services — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO                               | Yes      |
 | `continuum-platform` | Application services — API Server, Orchestration Service, Message Bridge, Workbench, Feature Workers                                  | Yes      |
-| `continuum-sso`      | Optional Single Sign-On & ingress — OAuth2 Proxy, protected ingresses for infrastructure and platform UIs                             | No       |
+| `continuum-sso`      | Optional Single Sign-On — OAuth2 Proxy with multi-provider support (Google, GitHub, Microsoft, LinkedIn)                              | No       |
 
 ## Prerequisites
 
@@ -248,54 +248,31 @@ Open workbench in your browser: [Continuum-Workbench](http://localhost:3002/#/ho
 
 **Ingress (production):**
 
-For external access with OAuth2 authentication, deploy the optional `continuum-sso` chart:
+For external access, configure your own Ingress resources or use an ingress controller.
+If you need OAuth2 authentication, deploy the `continuum-sso` chart and configure your
+ingress to use oauth2-proxy for auth:
 
 ```bash
-# Install SSO and ingress management
+# Install SSO (OAuth2 Proxy)
 helm install continuum-sso ./continuum-sso \
   -n continuum \
   -f continuum-sso/values-dev.yaml \
   --wait
 ```
 
-Configure your domain names in the sso chart values:
+Then configure your ingress annotations to use oauth2-proxy:
 
 ```yaml
-# continuum-sso values
-ingress:
-  enabled: true
-  className: nginx
-  oauth2Provider: "google"
-  
-  infra:
-    enabled: true
-    temporalUi:
-      host: temporal.yourdomain.com
-    kafkaUi:
-      host: kafka-ui.yourdomain.com
-    minioConsole:
-      host: minio-console.yourdomain.com
-  
-  platform:
-    enabled: true
-    landingPage:
-      host: continuum.yourdomain.com
-      requireAuth: false
-    workbench:
-      host: app.yourdomain.com
-      requireAuth: true
-    apiServer:
-      host: api.yourdomain.com
-      requireAuth: false
-
-oauth2Proxy:
-  enabled: true
-  publicHost: "auth.yourdomain.com"
-  cookieDomain: "yourdomain.com"
-  providers:
-    google:
-      enabled: true
-      existingSecret: my-google-oauth-secret
+# Example ingress with oauth2-proxy authentication
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-protected-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/auth-url: "http://continuum-sso-oauth2-proxy-google:4180/oauth2/google/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://auth.yourdomain.com/oauth2/google/start?rd=$escaped_request_uri"
+spec:
+  # ... your ingress spec
 ```
 
 ## Smoke Test
