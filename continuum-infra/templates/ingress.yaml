@@ -3,6 +3,7 @@
 {{- $oauth2Enabled := and .Values.oauth2Proxy.enabled .Values.ingress.oauth2Auth.enabled }}
 {{- $oauth2Provider := .Values.ingress.oauth2Auth.provider | default "google" }}
 {{- $oauth2Host := .Values.oauth2Proxy.publicHost | default ((.Values.ingress.hosts.oauth2).host | default "localhost") }}
+{{- $oauth2Scheme := ternary "https" "http" (gt (len .Values.ingress.tls) 0) }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -10,10 +11,14 @@ metadata:
   labels:
     {{- include "continuum-infra.labels" . | nindent 4 }}
   annotations:
+    {{- if eq (len .Values.ingress.tls) 0 }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    {{- end }}
     {{- if $oauth2Enabled }}
-    nginx.ingress.kubernetes.io/auth-url: "http://{{ $fullname }}-oauth2-proxy-{{ $oauth2Provider }}.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/auth"
-    nginx.ingress.kubernetes.io/auth-signin: "https://{{ $oauth2Host }}/oauth2/{{ $oauth2Provider }}/start?rd=$scheme://$host$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-url: "http://{{ $fullname }}-oauth2-proxy-{{ $oauth2Provider }}.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/{{ $oauth2Provider }}/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "{{ $oauth2Scheme }}://{{ $oauth2Host }}/oauth2/{{ $oauth2Provider }}/start?rd={{ $oauth2Scheme }}://$host$escaped_request_uri"
     nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Groups"
+    nginx.ingress.kubernetes.io/auth-signin-redirect-param: "rd"
     {{- end }}
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
@@ -73,6 +78,9 @@ metadata:
   labels:
     {{- include "continuum-infra.labels" . | nindent 4 }}
   annotations:
+    {{- if eq (len .Values.ingress.tls) 0 }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    {{- end }}
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/upstream-hash-by: "$remote_addr"

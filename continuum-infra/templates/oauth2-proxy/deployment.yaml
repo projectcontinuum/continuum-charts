@@ -7,6 +7,7 @@
 {{- $image := .Values.oauth2Proxy.image }}
 {{- $service := .Values.oauth2Proxy.service }}
 {{- $scheduling := dict "nodeSelector" .Values.oauth2Proxy.nodeSelector "tolerations" .Values.oauth2Proxy.tolerations "affinity" .Values.oauth2Proxy.affinity }}
+{{- $scheme := ternary "https" "http" (gt (len .Values.ingress.tls) 0) }}
 
 {{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
 {{- if $provider.enabled }}
@@ -46,8 +47,22 @@ spec:
           args:
             - --http-address=0.0.0.0:4180
             - --provider={{ $provider.providerType }}
-            - --redirect-url=https://{{ $root.Values.oauth2Proxy.publicHost | default "localhost" }}{{ $provider.callbackPath }}
-            - --upstream={{ $provider.upstreamUrl | default $globalUpstream }}
+            # Use proxy-prefix so oauth2-proxy handles /oauth2/<provider>/* paths
+            - --proxy-prefix=/oauth2/{{ $providerName }}
+            - --redirect-url={{ $scheme }}://{{ $root.Values.oauth2Proxy.publicHost | default "localhost" }}/oauth2/{{ $providerName }}/callback
+            - --upstream=static://202
+            # Required for nginx auth_request - returns 401 instead of 403 for unauthenticated requests
+            - --reverse-proxy=true
+            - --skip-provider-button=true
+            # Set X-Auth-Request-* headers for nginx to forward to backends
+            - --set-xauthrequest=true
+            # Whitelist domains for redirect after authentication
+            - --whitelist-domain=.{{ $root.Values.oauth2Proxy.cookieDomain | default "192.168.49.2.nip.io" }}
+            # Cookie domain to share authentication across subdomains
+            - --cookie-domain=.{{ $root.Values.oauth2Proxy.cookieDomain | default "192.168.49.2.nip.io" }}
+            # CSRF cookie settings - use per-request CSRF to avoid token mismatch issues
+            - --cookie-csrf-per-request=true
+            - --cookie-csrf-expire=5m
             {{- if $provider.emailDomains }}
             {{- range $provider.emailDomains }}
             - --email-domain={{ . }}
@@ -60,6 +75,7 @@ spec:
             # Cookie configuration
             - --cookie-name=_oauth2_proxy_{{ $providerName }}
             - --cookie-secure={{ $globalCookie.secure }}
+            - --cookie-samesite=lax
             - --cookie-expire={{ $globalCookie.expire }}
             - --cookie-refresh={{ $globalCookie.refresh }}
             # Provider-specific configuration

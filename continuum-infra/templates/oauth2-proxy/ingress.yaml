@@ -21,6 +21,9 @@ metadata:
     {{- include "continuum-infra.labels" $root | nindent 4 }}
     app.kubernetes.io/component: oauth2-proxy
   annotations:
+    {{- if eq (len .Values.ingress.tls) 0 }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    {{- end }}
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

@@ -251,8 +251,10 @@ minio:
 oauth2Proxy:
   enabled: true
   publicHost: "auth.192.168.49.2.nip.io"  # Use your local cluster's IP or a wildcard DNS for dev
+  cookieDomain: "192.168.49.2.nip.io"  # Domain for cookie sharing across subdomains
   cookie:
     existingSecret: oauth2-proxy-cookie
+    secure: false  # Allow HTTP in local dev
   providers:
     google:
       enabled: true
@@ -292,6 +294,8 @@ ingress:
   oauth2Auth:
     enabled: true
     provider: "google"
+  # No TLS for local development - use HTTP only
+  tls: []
   hosts:
     temporalUi:
       host: "temporal.192.168.49.2.nip.io"
