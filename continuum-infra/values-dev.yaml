@@ -254,7 +254,7 @@ oauth2Proxy:
   cookieDomain: "192.168.49.2.nip.io"  # Domain for cookie sharing across subdomains
   cookie:
     existingSecret: oauth2-proxy-cookie
-    secure: false  # Allow HTTP in local dev
+    secure: true  # Enable secure cookies (requires HTTPS)
   providers:
     google:
       enabled: true
@@ -294,8 +294,11 @@ ingress:
   oauth2Auth:
     enabled: true
     provider: "google"
-  # No TLS for local development - use HTTP only
-  tls: []
+  # TLS configuration with self-signed certificate for local development
+  tls:
+    - secretName: continuum-tls
+      hosts:
+        - "*.192.168.49.2.nip.io"
   hosts:
     temporalUi:
       host: "temporal.192.168.49.2.nip.io"
