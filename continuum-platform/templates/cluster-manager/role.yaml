@@ -1,0 +1,44 @@
+{{- if .Values.clusterManager.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "continuum-platform.cluster-manager.fullname" . }}-workbench-manager
+  namespace: {{ .Values.clusterManager.workbench.namespace }}
+  labels:
+    app.kubernetes.io/component: cluster-manager
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+rules:
+  # Manage Deployments for workbench instances
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete", "deletecollection"]
+  # Manage Services for workbench instances
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete", "deletecollection"]
+  # Manage ConfigMaps for workbench configuration
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete", "deletecollection"]
+  # Manage Secrets for workbench credentials
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete", "deletecollection"]
+  # Manage PVCs for workbench storage
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete", "deletecollection"]
+  # Manage Pods for workbench status monitoring
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "delete"]
+  # Manage Pod logs for workbench debugging
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+  # Manage Ingress for workbench external access
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
+{{- end }}
+

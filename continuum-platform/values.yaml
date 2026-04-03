@@ -114,6 +114,37 @@ orchestrationService:
   affinity: {}
 
 # ============================================================
+# continuum-cluster-manager
+# ============================================================
+clusterManager:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-cluster-manager
+    tag: "0.0.10"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  # Workbench instance configuration
+  workbench:
+    # Namespace where workbench instances will be created (configurable per env)
+    namespace: continuum-workbench
+    # Default image for workbench instances
+    defaultImage: projectcontinuum/continuum-workbench:0.0.5
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
 # continuum-message-bridge
 # ============================================================
 messageBridge:

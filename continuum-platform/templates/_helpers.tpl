@@ -96,3 +96,8 @@ tcp://{{ .Values.infra.mosquitto.host }}:{{ .Values.infra.mosquitto.port }}
 {{- define "continuum-platform.feature-cheminformatics.fullname" -}}
 {{- include "continuum-platform.fullname" . -}}-feature-cheminformatics
 {{- end }}
+
+{{- define "continuum-platform.cluster-manager.fullname" -}}
+{{- include "continuum-platform.fullname" . -}}-cluster-manager
+{{- end }}
+

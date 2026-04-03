@@ -42,6 +42,19 @@ messageBridge:
       cpu: 500m
       memory: 768Mi
 
+clusterManager:
+  replicas: 1
+  workbench:
+    namespace: continuum-workbench-dev
+    defaultImage: projectcontinuum/continuum-workbench:0.0.5
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
 workbench:
   replicas: 1
   resources:
