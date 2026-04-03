@@ -195,6 +195,31 @@ workbench:
   affinity: {}
 
 # ============================================================
+# landing-page (static marketing/landing page)
+# ============================================================
+landingPage:
+  enabled: true
+  image:
+    repository: projectcontinuum/landing-page
+    tag: "0.0.10"
+    pullPolicy: Always
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
 # Feature Workers (horizontally scalable)
 # ============================================================
 featureBase:
@@ -246,7 +271,7 @@ featureCheminformatics:
   affinity: {}
 
 # ============================================================
-# Ingress (Workbench + API Server)
+# Ingress (Landing Page, Workbench + API Server)
 # ============================================================
 ingress:
   enabled: false
@@ -255,8 +280,11 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
   hosts:
-    workbench:
+    landingPage:
       host: continuum.example.com
+      path: /
+    workbench:
+      host: app.continuum.example.com
       path: /
     apiServer:
       host: api.continuum.example.com

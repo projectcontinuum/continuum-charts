@@ -1,0 +1,20 @@
+{{- if .Values.landingPage.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "continuum-platform.landing-page.fullname" . }}
+  labels:
+    app.kubernetes.io/component: landing-page
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.landingPage.service.port | default 8080 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/component: landing-page
+    {{- include "continuum-platform.selectorLabels" . | nindent 4 }}
+{{- end }}
+

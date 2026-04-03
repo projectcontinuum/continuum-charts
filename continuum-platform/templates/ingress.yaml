@@ -14,6 +14,18 @@ spec:
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
   rules:
+    {{- if and .Values.landingPage.enabled .Values.ingress.hosts.landingPage }}
+    - host: {{ .Values.ingress.hosts.landingPage.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingress.hosts.landingPage.path | default "/" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "continuum-platform.landing-page.fullname" . }}
+                port:
+                  number: {{ .Values.landingPage.service.port | default 8080 }}
+    {{- end }}
     {{- if and .Values.workbench.enabled .Values.ingress.hosts.workbench }}
     - host: {{ .Values.ingress.hosts.workbench.host }}
       http:
