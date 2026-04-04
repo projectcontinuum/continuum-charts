@@ -10,8 +10,10 @@ metadata:
   annotations:
     {{- if .Values.platformIngress.auth.enabled }}
     nginx.ingress.kubernetes.io/auth-url: "http://{{ $fullname }}-oauth2-proxy.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.oauth2Proxy.service.port }}/oauth2/auth"
-    nginx.ingress.kubernetes.io/auth-signin: "https://{{ .Values.oauth2Proxy.publicHost }}/oauth2/start?rd=$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-signin: "https://{{ .Values.oauth2Proxy.publicHost }}/oauth2/start?rd=$scheme://$host$escaped_request_uri"
     nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email,X-Auth-Request-Access-Token"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
     {{- end }}
     {{- with .Values.platformIngress.annotations }}
     {{- toYaml . | nindent 4 }}
