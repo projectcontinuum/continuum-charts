@@ -26,6 +26,23 @@ keycloak:
     url: "jdbc:postgresql://continuum-infra-postgresql:5432/keycloak"
     existingSecret: keycloak-db
 
+  # Ingress for dev environment
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+    hosts:
+      - host: keycloak.192.168.49.2.nip.io
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - "*.192.168.49.2.nip.io"
+        secretName: continuum-tls
+
   # Dev resources
   resources:
     requests:
