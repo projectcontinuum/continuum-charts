@@ -112,9 +112,36 @@ platformIngress:
       paths:
         - path: /
           pathType: Prefix
-          serviceName: continuum-platform-landing-page
+          serviceName: continuum-sso-landing-page
           servicePort: 8080
   tls:
     - hosts:
         - continuum.192.168.49.2.nip.io
       secretName: continuum-tls
+
+# -----------------------------------------------------------------------------
+# Landing Page — Authentication entry point
+# -----------------------------------------------------------------------------
+landingPage:
+  enabled: true
+  image:
+    repository: projectcontinuum/landing-page
+    tag: "0.0.11"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  # SSO Configuration for dev environment
+  keycloakUrl: "https://keycloak.192.168.49.2.nip.io"
+  keycloakRealm: "continuum"
+  keycloakClientId: "continuum"
+  publicAuthUrl: "https://auth.192.168.49.2.nip.io"
+  publicAppUrl: "https://continuum.192.168.49.2.nip.io"
+  cookieDomain: ".192.168.49.2.nip.io"
+  # Dev resources
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+

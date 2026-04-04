@@ -82,6 +82,8 @@ spec:
             - --oidc-extra-audience={{ . }}
             {{- end }}
             {{- end }}
+            # Pass query parameters to OIDC provider (for kc_idp_hint support)
+            - --pass-authorization-header=true
             # Additional args
             {{- range .Values.oauth2Proxy.extraArgs }}
             - {{ . }}

@@ -307,20 +307,32 @@ kubectl port-forward svc/continuum-sso-keycloak 8080:8080 -n continuum-dev
 # Open http://localhost:8080 and login with admin/admin
 # 1. Create a realm named "continuum"
 # 2. Create a client with:
-#    - Client ID: continuum-oauth2-proxy
+#    - Client ID: continuum
 #    - Client authentication: ON
-#    - Valid redirect URIs: https://auth.192.168.49.2.nip.io/oauth2/callback
-#    - Web origins: https://auth.192.168.49.2.nip.io
+#    - Valid redirect URIs:
+#      - https://auth.192.168.49.2.nip.io/oauth2/callback (OAuth2 Proxy callback)
+#      - https://continuum.192.168.49.2.nip.io/auth/keycloak-callback (Landing page callback for direct IdP flows)
+#    - Web origins: https://*.192.168.49.2.nip.io
 # 3. Copy the client secret from Credentials tab
 ```
 
-**Step 5: Update the oauth2-proxy-keycloak secret with the actual client secret**
+**Step 5: Configure Identity Providers (optional - for SSO buttons)**
+
+To enable "Sign in with Google/GitHub/etc" buttons on the landing page:
+
+1. In Keycloak, go to Identity Providers
+2. Add providers (Google, GitHub, etc.) with their respective OAuth credentials
+3. Use the provider alias (e.g., `google`, `github`) - the landing page uses these as `kc_idp_hint`
+
+The landing page will redirect directly to Keycloak with `kc_idp_hint` parameter, which skips the Keycloak login page and goes straight to the selected IdP.
+
+**Step 6: Update the oauth2-proxy-client-creds secret with the actual client secret**
 
 ```bash
 # Delete and recreate with the actual secret
-kubectl delete secret oauth2-proxy-keycloak -n continuum-dev
-kubectl create secret generic oauth2-proxy-keycloak \
-  --from-literal=client-id=continuum-oauth2-proxy \
+kubectl delete secret oauth2-proxy-client-creds -n continuum-dev
+kubectl create secret generic oauth2-proxy-client-creds \
+  --from-literal=client-id=continuum \
   --from-literal=client-secret=YOUR_ACTUAL_CLIENT_SECRET \
   -n continuum-dev
 

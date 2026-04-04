@@ -235,6 +235,70 @@ platformIngress:
       paths:
         - path: /
           pathType: Prefix
-          serviceName: continuum-platform-landing-page
+          serviceName: continuum-sso-landing-page
           servicePort: 8080
   tls: []
+
+# =============================================================================
+# Landing Page — Authentication entry point
+# =============================================================================
+# Deploys the landing page that handles SSO authentication flows.
+# The landing page provides sign-in buttons for various identity providers
+# and manages the OAuth2 flow with Keycloak.
+# -----------------------------------------------------------------------------
+landingPage:
+  enabled: true
+
+  # Landing page image configuration.
+  image:
+    repository: projectcontinuum/landing-page
+    tag: "0.0.11"
+    pullPolicy: ""  # Defaults to global.imagePullPolicy
+
+  # Number of replicas.
+  replicas: 1
+
+  # ---------------------------------------------------------------------------
+  # SSO Configuration
+  # ---------------------------------------------------------------------------
+  # These values are automatically derived from the oauth2Proxy and keycloak
+  # configurations, but can be overridden if needed.
+
+  # Keycloak URL (auto-derived from keycloak.ingress.hosts if not set)
+  keycloakUrl: ""
+  # Keycloak realm name (defaults to keycloak.realm)
+  keycloakRealm: ""
+  # OAuth2 client ID for the landing page
+  keycloakClientId: "continuum"
+  # Public OAuth2 Proxy URL (auto-derived from oauth2Proxy.publicHost if not set)
+  publicAuthUrl: ""
+  # Public landing page URL (required)
+  publicAppUrl: ""
+  # Cookie domain for cross-subdomain auth (auto-derived from oauth2Proxy.cookieDomain if not set)
+  cookieDomain: ""
+
+  # ---------------------------------------------------------------------------
+  # Service configuration
+  # ---------------------------------------------------------------------------
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # ---------------------------------------------------------------------------
+  # Resources
+  # ---------------------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  # ---------------------------------------------------------------------------
+  # Pod scheduling
+  # ---------------------------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+

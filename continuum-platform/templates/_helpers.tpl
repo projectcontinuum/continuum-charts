@@ -101,7 +101,4 @@ tcp://{{ .Values.infra.mosquitto.host }}:{{ .Values.infra.mosquitto.port }}
 {{- include "continuum-platform.fullname" . -}}-cluster-manager
 {{- end }}
 
-{{- define "continuum-platform.landing-page.fullname" -}}
-{{- include "continuum-platform.fullname" . -}}-landing-page
-{{- end }}
 
