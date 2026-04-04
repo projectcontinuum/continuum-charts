@@ -44,7 +44,7 @@ oauth2Proxy:
   keycloak:
     issuerUrl: "https://keycloak.192.168.49.2.nip.io/realms/continuum"
     # Use existing secret for credentials in dev
-    existingSecret: oauth2-proxy-keycloak
+    existingSecret: oauth2-proxy-client-creds
   # OAuth2 Proxy settings
   publicHost: "auth.192.168.49.2.nip.io"
   cookieDomain: "192.168.49.2.nip.io"

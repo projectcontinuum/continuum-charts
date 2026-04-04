@@ -283,8 +283,8 @@ kubectl create secret generic oauth2-proxy-cookie \
   -n continuum-dev
 
 # Create the Keycloak client credentials secret (placeholder - update after Keycloak setup)
-kubectl create secret generic oauth2-proxy-keycloak \
-  --from-literal=client-id=continuum-oauth2-proxy \
+kubectl create secret generic oauth2-proxy-client-creds \
+  --from-literal=client-id=REPLACE_WITH_CLIENT_ID \
   --from-literal=client-secret=REPLACE_WITH_CLIENT_SECRET \
   -n continuum-dev
 ```
