@@ -214,3 +214,25 @@ keycloak:
   tolerations: []
   affinity: {}
 
+# =============================================================================
+# Platform Ingress — Protected services behind OAuth2 Proxy
+# =============================================================================
+# Creates ingress resources for platform services with OAuth2 authentication.
+# -----------------------------------------------------------------------------
+platformIngress:
+  enabled: false
+  className: ""
+  # Enable OAuth2 authentication via oauth2-proxy
+  auth:
+    enabled: true
+  # Additional annotations for the ingress
+  annotations: {}
+  # Host configurations
+  hosts:
+    - host: app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: continuum-platform-landing-page
+          servicePort: 8080
+  tls: []

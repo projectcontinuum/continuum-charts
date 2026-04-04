@@ -90,3 +90,24 @@ oauth2Proxy:
     limits:
       cpu: 100m
       memory: 64Mi
+
+# -----------------------------------------------------------------------------
+# Platform Ingress — Landing Page with OAuth2 authentication
+# -----------------------------------------------------------------------------
+platformIngress:
+  enabled: true
+  className: nginx
+  auth:
+    enabled: true
+  annotations: {}
+  hosts:
+    - host: continuum.192.168.49.2.nip.io
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: continuum-platform-landing-page
+          servicePort: 8080
+  tls:
+    - hosts:
+        - continuum.192.168.49.2.nip.io
+      secretName: continuum-tls
