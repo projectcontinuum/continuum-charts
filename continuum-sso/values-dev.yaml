@@ -68,6 +68,20 @@ oauth2Proxy:
   cookie:
     existingSecret: oauth2-proxy-cookie
     secure: true
+  # Ingress for dev environment
+  ingress:
+    enabled: true
+    className: nginx
+    annotations: {}
+    hosts:
+      - host: auth.192.168.49.2.nip.io
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - auth.192.168.49.2.nip.io
+        secretName: continuum-tls
   # Dev resources
   resources:
     requests:

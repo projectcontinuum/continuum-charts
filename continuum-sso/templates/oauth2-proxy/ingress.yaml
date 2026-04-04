@@ -1,0 +1,45 @@
+{{- if and .Values.oauth2Proxy.enabled .Values.oauth2Proxy.ingress.enabled }}
+{{- $fullname := include "continuum-sso.fullname" . }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-oauth2-proxy
+  labels:
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: oauth2-proxy
+  {{- with .Values.oauth2Proxy.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.oauth2Proxy.ingress.className }}
+  ingressClassName: {{ .Values.oauth2Proxy.ingress.className }}
+  {{- end }}
+  {{- if .Values.oauth2Proxy.ingress.tls }}
+  tls:
+    {{- range .Values.oauth2Proxy.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      {{- if .secretName }}
+      secretName: {{ .secretName }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.oauth2Proxy.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $fullname }}-oauth2-proxy
+                port:
+                  number: {{ $.Values.oauth2Proxy.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
