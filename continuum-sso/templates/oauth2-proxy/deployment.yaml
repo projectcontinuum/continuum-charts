@@ -1,140 +1,104 @@
 {{- if .Values.oauth2Proxy.enabled }}
-{{- $root := . }}
 {{- $fullname := include "continuum-sso.fullname" . }}
-{{- $globalCookie := .Values.oauth2Proxy.cookie }}
+{{- $cookie := .Values.oauth2Proxy.cookie }}
+{{- $keycloak := .Values.oauth2Proxy.keycloak }}
 {{- $image := .Values.oauth2Proxy.image }}
-{{- $service := .Values.oauth2Proxy.service }}
-{{- $scheduling := dict "nodeSelector" .Values.oauth2Proxy.nodeSelector "tolerations" .Values.oauth2Proxy.tolerations "affinity" .Values.oauth2Proxy.affinity }}
-{{- $scheme := ternary "https" "http" $globalCookie.secure }}
-
-{{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
-{{- if $provider.enabled }}
----
+{{- $scheme := ternary "https" "http" $cookie.secure }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
+  name: {{ $fullname }}-oauth2-proxy
   labels:
-    {{- include "continuum-sso.labels" $root | nindent 4 }}
+    {{- include "continuum-sso.labels" . | nindent 4 }}
     app.kubernetes.io/component: oauth2-proxy
-    app.kubernetes.io/oauth2-provider: {{ $providerName }}
 spec:
-  replicas: {{ $provider.replicas | default 1 }}
+  replicas: {{ .Values.oauth2Proxy.replicas | default 1 }}
   selector:
     matchLabels:
-      {{- include "continuum-sso.selectorLabels" $root | nindent 6 }}
+      {{- include "continuum-sso.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: oauth2-proxy
-      app.kubernetes.io/oauth2-provider: {{ $providerName }}
   template:
     metadata:
       labels:
-        {{- include "continuum-sso.labels" $root | nindent 8 }}
+        {{- include "continuum-sso.labels" . | nindent 8 }}
         app.kubernetes.io/component: oauth2-proxy
-        app.kubernetes.io/oauth2-provider: {{ $providerName }}
       annotations:
-        checksum/secret: {{ include (print $.Template.BasePath "/oauth2-proxy/secret.yaml") $root | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/oauth2-proxy/secret.yaml") . | sha256sum }}
     spec:
-      {{- with $root.Values.global.imagePullSecrets }}
+      {{- with .Values.global.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: oauth2-proxy
           image: "{{ $image.repository }}:{{ $image.tag }}"
-          imagePullPolicy: {{ $image.pullPolicy | default $root.Values.global.imagePullPolicy }}
+          imagePullPolicy: {{ $image.pullPolicy | default .Values.global.imagePullPolicy }}
           args:
             - --http-address=0.0.0.0:4180
-            - --provider={{ $provider.providerType }}
-            # Use proxy-prefix so oauth2-proxy handles /oauth2/<provider>/* paths
-            - --proxy-prefix=/oauth2/{{ $providerName }}
-            - --redirect-url={{ $scheme }}://{{ $root.Values.oauth2Proxy.publicHost | default "localhost" }}/oauth2/{{ $providerName }}/callback
+            - --provider=keycloak-oidc
+            - --oidc-issuer-url={{ $keycloak.issuerUrl }}
+            - --redirect-url={{ $scheme }}://{{ .Values.oauth2Proxy.publicHost }}/oauth2/callback
             - --upstream=static://202
-            # Required for nginx auth_request - returns 401 instead of 403 for unauthenticated requests
+            # Required for nginx auth_request
             - --reverse-proxy=true
             - --skip-provider-button=true
             # Set X-Auth-Request-* headers for nginx to forward to backends
             - --set-xauthrequest=true
             # Whitelist domains for redirect after authentication
-            - --whitelist-domain=.{{ $root.Values.oauth2Proxy.cookieDomain | default "localhost" }}
+            - --whitelist-domain=.{{ .Values.oauth2Proxy.cookieDomain }}
             # Cookie domain to share authentication across subdomains
-            - --cookie-domain=.{{ $root.Values.oauth2Proxy.cookieDomain | default "localhost" }}
-            # CSRF cookie settings - use per-request CSRF to avoid token mismatch issues
+            - --cookie-domain=.{{ .Values.oauth2Proxy.cookieDomain }}
+            # CSRF cookie settings
             - --cookie-csrf-per-request=true
             - --cookie-csrf-expire=5m
-            {{- if $provider.emailDomains }}
-            {{- range $provider.emailDomains }}
+            # Email domains
+            {{- range .Values.oauth2Proxy.emailDomains }}
             - --email-domain={{ . }}
-            {{- end }}
-            {{- else }}
-            {{- range $root.Values.oauth2Proxy.emailDomains }}
-            - --email-domain={{ . }}
-            {{- end }}
             {{- end }}
             # Cookie configuration
-            - --cookie-name=_oauth2_proxy_{{ $providerName }}
-            - --cookie-secure={{ $globalCookie.secure }}
+            - --cookie-name={{ $cookie.name }}
+            - --cookie-secure={{ $cookie.secure }}
             - --cookie-samesite=lax
-            - --cookie-expire={{ $globalCookie.expire }}
-            - --cookie-refresh={{ $globalCookie.refresh }}
-            # Provider-specific configuration
-            {{- if eq $provider.providerType "azure" }}
-            - --azure-tenant={{ $provider.azureTenant | default "common" }}
+            - --cookie-expire={{ $cookie.expire }}
+            - --cookie-refresh={{ $cookie.refresh }}
+            # Keycloak scopes
+            {{- if $keycloak.scope }}
+            - --scope={{ $keycloak.scope }}
             {{- end }}
-            {{- if eq $provider.providerType "github" }}
-            {{- if $provider.githubOrg }}
-            - --github-org={{ $provider.githubOrg }}
-            {{- end }}
-            {{- if $provider.githubTeam }}
-            - --github-team={{ $provider.githubTeam }}
-            {{- end }}
-            {{- end }}
-            {{- if eq $provider.providerType "oidc" }}
-            {{- if $provider.oidcIssuerUrl }}
-            - --oidc-issuer-url={{ $provider.oidcIssuerUrl }}
-            {{- end }}
-            {{- if $provider.loginUrl }}
-            - --login-url={{ $provider.loginUrl }}
-            {{- end }}
-            {{- if $provider.redeemUrl }}
-            - --redeem-url={{ $provider.redeemUrl }}
-            {{- end }}
-            {{- if $provider.profileUrl }}
-            - --profile-url={{ $provider.profileUrl }}
-            {{- end }}
-            {{- if $provider.scope }}
-            - --scope={{ $provider.scope }}
-            {{- end }}
+            # Keycloak allowed groups
+            {{- range $keycloak.allowedGroups }}
+            - --allowed-group={{ . }}
             {{- end }}
             # Additional args
-            {{- range $provider.extraArgs }}
+            {{- range .Values.oauth2Proxy.extraArgs }}
             - {{ . }}
             {{- end }}
           env:
             - name: OAUTH2_PROXY_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  {{- if $provider.existingSecret }}
-                  name: {{ $provider.existingSecret }}
+                  {{- if $keycloak.existingSecret }}
+                  name: {{ $keycloak.existingSecret }}
                   {{- else }}
-                  name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
+                  name: {{ $fullname }}-oauth2-proxy
                   {{- end }}
                   key: client-id
             - name: OAUTH2_PROXY_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  {{- if $provider.existingSecret }}
-                  name: {{ $provider.existingSecret }}
+                  {{- if $keycloak.existingSecret }}
+                  name: {{ $keycloak.existingSecret }}
                   {{- else }}
-                  name: {{ $fullname }}-oauth2-proxy-{{ $providerName }}
+                  name: {{ $fullname }}-oauth2-proxy
                   {{- end }}
                   key: client-secret
             - name: OAUTH2_PROXY_COOKIE_SECRET
               valueFrom:
                 secretKeyRef:
-                  {{- if $globalCookie.existingSecret }}
-                  name: {{ $globalCookie.existingSecret }}
+                  {{- if $cookie.existingSecret }}
+                  name: {{ $cookie.existingSecret }}
                   {{- else }}
-                  name: {{ $fullname }}-oauth2-proxy-cookie
+                  name: {{ $fullname }}-oauth2-proxy
                   {{- end }}
                   key: cookie-secret
           ports:
@@ -153,7 +117,7 @@ spec:
               port: http
             initialDelaySeconds: 5
             periodSeconds: 5
-          {{- with $provider.resources }}
+          {{- with .Values.oauth2Proxy.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -165,19 +129,16 @@ spec:
             capabilities:
               drop:
                 - ALL
-      {{- with $scheduling.nodeSelector }}
+      {{- with .Values.oauth2Proxy.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with $scheduling.affinity }}
+      {{- with .Values.oauth2Proxy.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with $scheduling.tolerations }}
+      {{- with .Values.oauth2Proxy.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 {{- end }}
-{{- end }}
-{{- end }}
-

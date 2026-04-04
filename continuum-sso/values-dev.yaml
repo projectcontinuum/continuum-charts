@@ -10,52 +10,52 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# OAuth2 Proxy — development configuration
+# Keycloak — Identity Provider
+# -----------------------------------------------------------------------------
+keycloak:
+  enabled: true
+
+  auth:
+    # Use existing secret for admin credentials
+    existingSecret: keycloak-admin
+
+  # Database configuration - use PostgreSQL from continuum-infra
+  database:
+    enabled: true
+    vendor: "postgres"
+    url: "jdbc:postgresql://continuum-infra-postgresql:5432/keycloak"
+    existingSecret: keycloak-db
+
+  # Dev resources
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+# -----------------------------------------------------------------------------
+# OAuth2 Proxy
 # -----------------------------------------------------------------------------
 oauth2Proxy:
   enabled: true
+  # Keycloak configuration
+  keycloak:
+    issuerUrl: "https://keycloak.192.168.49.2.nip.io/realms/continuum"
+    # Use existing secret for credentials in dev
+    existingSecret: oauth2-proxy-keycloak
+  # OAuth2 Proxy settings
   publicHost: "auth.192.168.49.2.nip.io"
   cookieDomain: "192.168.49.2.nip.io"
   cookie:
     existingSecret: oauth2-proxy-cookie
-    secure: true  # Enable secure cookies (requires HTTPS)
-  providers:
-    google:
-      enabled: true
-      existingSecret: oauth2-proxy-google
-      resources:
-        requests:
-          cpu: 25m
-          memory: 32Mi
-        limits:
-          cpu: 100m
-          memory: 64Mi
-    github:
-      enabled: false
-      resources:
-        requests:
-          cpu: 25m
-          memory: 32Mi
-        limits:
-          cpu: 100m
-          memory: 64Mi
-    microsoft:
-      enabled: false
-      resources:
-        requests:
-          cpu: 25m
-          memory: 32Mi
-        limits:
-          cpu: 100m
-          memory: 64Mi
-    linkedin:
-      enabled: false
-      resources:
-        requests:
-          cpu: 25m
-          memory: 32Mi
-        limits:
-          cpu: 100m
-          memory: 64Mi
-
-
+    secure: true
+  # Dev resources
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi

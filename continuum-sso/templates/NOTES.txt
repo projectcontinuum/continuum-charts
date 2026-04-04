@@ -1,27 +1,19 @@
 Thank you for installing continuum-sso!
-
 {{- if .Values.oauth2Proxy.enabled }}
-
-=== OAuth2 Proxy ===
-
-OAuth2 Proxy has been deployed with the following providers:
-{{- range $providerName, $provider := .Values.oauth2Proxy.providers }}
-{{- if $provider.enabled }}
-  - {{ $provider.displayName | default $providerName }}: enabled
+=== OAuth2 Proxy (Keycloak) ===
+OAuth2 Proxy has been deployed with Keycloak as the identity provider.
+Keycloak Issuer URL: {{ .Values.oauth2Proxy.keycloak.issuerUrl }}
+Public Host: {{ .Values.oauth2Proxy.publicHost }}
+Cookie Domain: {{ .Values.oauth2Proxy.cookieDomain }}
+Service: {{ include "continuum-sso.fullname" . }}-oauth2-proxy:{{ .Values.oauth2Proxy.service.port }}
 {{- end }}
-{{- end }}
-
-Public host for OAuth callbacks: {{ .Values.oauth2Proxy.publicHost }}
-Cookie domain: {{ .Values.oauth2Proxy.cookieDomain }}
-
-{{- end }}
-
 === Important Notes ===
-
-1. OAuth credentials should be stored in Kubernetes Secrets and referenced via existingSecret.
-
-2. Configure your ingress controller to use oauth2-proxy for authentication by adding
-   the appropriate auth annotations pointing to the oauth2-proxy service.
-
+1. Configure your Keycloak client with the following redirect URI:
+   {{ ternary "https" "http" .Values.oauth2Proxy.cookie.secure }}://{{ .Values.oauth2Proxy.publicHost }}/oauth2/callback
+2. Store Keycloak client credentials in a Kubernetes Secret and reference it via:
+   oauth2Proxy.keycloak.existingSecret
+3. Configure your ingress controller to use oauth2-proxy for authentication:
+   annotations:
+     nginx.ingress.kubernetes.io/auth-url: "http://{{ include "continuum-sso.fullname" . }}-oauth2-proxy.{{ .Release.Namespace }}.svc.cluster.local:4180/oauth2/auth"
+     nginx.ingress.kubernetes.io/auth-signin: "https://{{ .Values.oauth2Proxy.publicHost }}/oauth2/start?rd=$escaped_request_uri"
 For more information, visit: https://github.com/projectcontinuum
-

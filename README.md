@@ -7,7 +7,7 @@ This directory contains three Helm charts for deploying Project Continuum on Kub
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `continuum-infra`    | Core infrastructure services — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO                               | Yes      |
 | `continuum-platform` | Application services — API Server, Orchestration Service, Message Bridge, Workbench, Feature Workers                                  | Yes      |
-| `continuum-sso`      | Optional Single Sign-On — OAuth2 Proxy with multi-provider support (Google, GitHub, Microsoft, LinkedIn)                              | No       |
+| `continuum-sso`      | Optional Single Sign-On — OAuth2 Proxy with Keycloak OIDC                                                                              | No       |
 
 ## Prerequisites
 
@@ -249,15 +249,83 @@ Open workbench in your browser: [Continuum-Workbench](http://localhost:3002/#/ho
 **Ingress (production):**
 
 For external access, configure your own Ingress resources or use an ingress controller.
-If you need OAuth2 authentication, deploy the `continuum-sso` chart and configure your
-ingress to use oauth2-proxy for auth:
+If you need OAuth2 authentication with Keycloak, deploy the `continuum-sso` chart:
+
+**Step 1: Create the Keycloak database in PostgreSQL**
+
+First, connect to the PostgreSQL pod and create the Keycloak database:
 
 ```bash
-# Install SSO (OAuth2 Proxy)
+# Connect to PostgreSQL
+kubectl exec -it continuum-infra-postgresql-0 -n continuum-dev -- psql -U postgres
+
+# Run these SQL commands:
+CREATE USER keycloak WITH PASSWORD 'dev-keycloak-pass';
+CREATE DATABASE keycloak OWNER keycloak;
+GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
+\c keycloak
+GRANT ALL ON SCHEMA public TO keycloak;
+\q
+```
+
+**Step 2: Create the required Kubernetes secrets**
+
+```bash
+# Create the Keycloak admin credentials secret
+kubectl create secret generic keycloak-admin \
+  --from-literal=admin-user=admin \
+  --from-literal=admin-password=admin \
+  -n continuum-dev
+
+# Create the OAuth2 Proxy cookie secret (32-byte random string)
+kubectl create secret generic oauth2-proxy-cookie \
+  --from-literal=cookie-secret=$(openssl rand -base64 32 | head -c 32) \
+  -n continuum-dev
+
+# Create the Keycloak client credentials secret (placeholder - update after Keycloak setup)
+kubectl create secret generic oauth2-proxy-keycloak \
+  --from-literal=client-id=continuum-oauth2-proxy \
+  --from-literal=client-secret=REPLACE_WITH_CLIENT_SECRET \
+  -n continuum-dev
+```
+
+**Step 3: Install the SSO chart**
+
+```bash
 helm install continuum-sso ./continuum-sso \
-  -n continuum \
+  -n continuum-dev \
   -f continuum-sso/values-dev.yaml \
   --wait
+```
+
+**Step 4: Configure Keycloak realm and client**
+
+```bash
+# Port-forward to Keycloak
+kubectl port-forward svc/continuum-sso-keycloak 8080:8080 -n continuum-dev
+
+# Open http://localhost:8080 and login with admin/admin
+# 1. Create a realm named "continuum"
+# 2. Create a client with:
+#    - Client ID: continuum-oauth2-proxy
+#    - Client authentication: ON
+#    - Valid redirect URIs: https://auth.192.168.49.2.nip.io/oauth2/callback
+#    - Web origins: https://auth.192.168.49.2.nip.io
+# 3. Copy the client secret from Credentials tab
+```
+
+**Step 5: Update the oauth2-proxy-keycloak secret with the actual client secret**
+
+```bash
+# Delete and recreate with the actual secret
+kubectl delete secret oauth2-proxy-keycloak -n continuum-dev
+kubectl create secret generic oauth2-proxy-keycloak \
+  --from-literal=client-id=continuum-oauth2-proxy \
+  --from-literal=client-secret=YOUR_ACTUAL_CLIENT_SECRET \
+  -n continuum-dev
+
+# Restart oauth2-proxy to pick up the new secret
+kubectl rollout restart deployment continuum-sso-oauth2-proxy -n continuum-dev
 ```
 
 Then configure your ingress annotations to use oauth2-proxy:
@@ -269,8 +337,8 @@ kind: Ingress
 metadata:
   name: my-protected-ingress
   annotations:
-    nginx.ingress.kubernetes.io/auth-url: "http://continuum-sso-oauth2-proxy-google:4180/oauth2/google/auth"
-    nginx.ingress.kubernetes.io/auth-signin: "https://auth.yourdomain.com/oauth2/google/start?rd=$escaped_request_uri"
+    nginx.ingress.kubernetes.io/auth-url: "http://continuum-sso-oauth2-proxy.continuum-dev.svc.cluster.local:4180/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://auth.192.168.49.2.nip.io/oauth2/start?rd=$escaped_request_uri"
 spec:
   # ... your ingress spec
 ```

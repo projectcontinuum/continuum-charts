@@ -1,6 +1,6 @@
 apiVersion: v2
 name: continuum-sso
-description: Single Sign-On for Project Continuum — OAuth2 Proxy with multi-provider support (Google, GitHub, Microsoft, LinkedIn)
+description: Single Sign-On for Project Continuum — OAuth2 Proxy with Keycloak OIDC
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
@@ -8,8 +8,9 @@ keywords:
   - continuum
   - sso
   - authentication
-  - ingress
   - oauth2-proxy
+  - keycloak
+  - oidc
 maintainers:
   - name: Project Continuum
 home: https://github.com/projectcontinuum
