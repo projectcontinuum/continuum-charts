@@ -70,11 +70,16 @@ oauth2Proxy:
     secure: true
   # Skip TLS verification for self-signed certs in dev (DO NOT use in production!)
   insecureOidcSkipVerify: true
+  # Extra audiences to allow (Keycloak returns 'account' by default)
+  oidcExtraAudiences:
+    - account
   # Ingress for dev environment
   ingress:
     enabled: true
     className: nginx
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
     hosts:
       - host: auth.192.168.49.2.nip.io
         paths:

@@ -37,7 +37,7 @@ spec:
             - --http-address=0.0.0.0:4180
             - --provider=keycloak-oidc
             - --oidc-issuer-url={{ $keycloak.issuerUrl }}
-            - --redirect-url={{ $scheme }}://{{ .Values.oauth2Proxy.publicHost }}/oauth2/callback
+            - --redirect-url={{ $scheme }}://{{ .Values.oauth2Proxy.publicHost }}{{ .Values.oauth2Proxy.callbackPath | default "/oauth2/callback" }}
             - --upstream=static://202
             # Required for nginx auth_request
             - --reverse-proxy=true
@@ -73,6 +73,13 @@ spec:
             {{- if .Values.oauth2Proxy.insecureOidcSkipVerify }}
             - --ssl-insecure-skip-verify=true
             - --insecure-oidc-skip-issuer-verification=true
+            - --insecure-oidc-allow-unverified-email=true
+            {{- end }}
+            # Skip audience verification (useful when Keycloak returns 'account' as audience)
+            {{- if .Values.oauth2Proxy.oidcExtraAudiences }}
+            {{- range .Values.oauth2Proxy.oidcExtraAudiences }}
+            - --oidc-extra-audience={{ . }}
+            {{- end }}
             {{- end }}
             # Additional args
             {{- range .Values.oauth2Proxy.extraArgs }}
