@@ -74,6 +74,8 @@ oauth2Proxy:
   # Emails/domains allowed to authenticate. Use "*" to allow all.
   emailDomains:
     - "*"
+  # Skip TLS verification for OIDC provider (dev only - DO NOT enable in production!)
+  insecureOidcSkipVerify: false
   # Additional command-line arguments for oauth2-proxy.
   extraArgs: []
   # ---------------------------------------------------------------------------

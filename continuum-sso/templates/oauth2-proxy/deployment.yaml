@@ -69,6 +69,11 @@ spec:
             {{- range $keycloak.allowedGroups }}
             - --allowed-group={{ . }}
             {{- end }}
+            # Skip TLS verification for OIDC provider (dev only)
+            {{- if .Values.oauth2Proxy.insecureOidcSkipVerify }}
+            - --ssl-insecure-skip-verify=true
+            - --insecure-oidc-skip-issuer-verification=true
+            {{- end }}
             # Additional args
             {{- range .Values.oauth2Proxy.extraArgs }}
             - {{ . }}

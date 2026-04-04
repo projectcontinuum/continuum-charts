@@ -68,6 +68,8 @@ oauth2Proxy:
   cookie:
     existingSecret: oauth2-proxy-cookie
     secure: true
+  # Skip TLS verification for self-signed certs in dev (DO NOT use in production!)
+  insecureOidcSkipVerify: true
   # Ingress for dev environment
   ingress:
     enabled: true
