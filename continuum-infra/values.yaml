@@ -64,6 +64,11 @@ postgresql:
     # The Secret must contain the keys: postgres-password, continuum-password.
     existingSecret: ""
 
+  # ---- Connection limits ----------------------------------------------------
+  # Maximum number of concurrent connections. Default PostgreSQL is 100.
+  # Increase this if running multiple services (Temporal, Keycloak, etc.)
+  maxConnections: 100
+
   # ---- Persistence ----------------------------------------------------------
   persistence:
     # Size of the PVC for the data directory (/var/lib/postgresql/data).

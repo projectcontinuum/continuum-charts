@@ -30,6 +30,10 @@ postgresql:
   persistence:
     size: 2Gi
 
+  # Increase max_connections for dev environment
+  # Temporal uses ~60 connections, Continuum uses ~30, Keycloak needs ~20
+  maxConnections: 200
+
   resources:
     requests:
       cpu: 100m

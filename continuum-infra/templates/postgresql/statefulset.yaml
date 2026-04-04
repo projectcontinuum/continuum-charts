@@ -67,6 +67,12 @@ spec:
                   key: continuum-db-name
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
+          {{- if .Values.postgresql.maxConnections }}
+          args:
+            - postgres
+            - -c
+            - max_connections={{ .Values.postgresql.maxConnections }}
+          {{- end }}
           livenessProbe:
             exec:
               command:
