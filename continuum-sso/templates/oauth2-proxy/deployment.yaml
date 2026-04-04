@@ -41,7 +41,8 @@ spec:
             - --upstream=static://202
             # Required for nginx auth_request
             - --reverse-proxy=true
-            - --skip-provider-button=true
+            # Skip OAuth2 Proxy provider button - users will use landing page buttons instead
+            - --skip-provider-button={{ .Values.oauth2Proxy.skipProviderButton | default true }}
             # Set X-Auth-Request-* headers for nginx to forward to backends
             - --set-xauthrequest=true
             # Whitelist domains for redirect after authentication

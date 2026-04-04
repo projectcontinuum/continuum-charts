@@ -105,7 +105,7 @@ platformIngress:
   enabled: true
   className: nginx
   auth:
-    enabled: true
+    enabled: false  # Landing page is public - users click sign-in buttons
   annotations: {}
   hosts:
     - host: continuum.192.168.49.2.nip.io
