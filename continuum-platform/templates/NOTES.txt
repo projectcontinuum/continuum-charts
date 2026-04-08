@@ -1,6 +1,8 @@
 Continuum Platform has been deployed.
 
 Components:
+  - Cloud Gateway (reverse proxy / single entry point)
+  - Cluster Manager (workbench lifecycle)
   - API Server
   - Orchestration Service
   - Message Bridge
@@ -14,8 +16,8 @@ To verify the deployment:
 
 Access the platform:
 
-  # API Server health check
-  kubectl port-forward svc/{{ include "continuum-platform.api-server.fullname" . }} 8080:8080 -n {{ .Release.Namespace }}
+  # Cloud Gateway (single entry point for all APIs)
+  kubectl port-forward svc/{{ include "continuum-platform.cloud-gateway.fullname" . }} 8080:8080 -n {{ .Release.Namespace }}
   curl http://localhost:8080/actuator/health
 
   # Workbench IDE

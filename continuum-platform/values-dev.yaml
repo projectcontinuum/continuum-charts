@@ -12,6 +12,16 @@ secrets:
     rootPassword: "dev-minio-secret"
 
 # Scale down for development
+cloudGateway:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
 apiServer:
   replicas: 1
   resources:
