@@ -23,6 +23,10 @@ This directory contains three Helm charts for deploying Project Continuum on Kub
 **Prerequisites:** [Minikube](https://minikube.sigs.k8s.io/docs/start/) and [Helm](https://helm.sh/docs/intro/install/) installed.
 
 ```bash
+# Clone the repo
+git clone https://github.com/projectcontinuum/continuum-charts.git
+cd continuum-charts
+
 # Start minikube (4 CPUs, 8GB RAM recommended)
 minikube start --cpus=4 --memory=8192
 
@@ -31,7 +35,7 @@ kubectl create namespace continuum-dev
 kubectl create namespace continuum-workbench-dev
 
 # Build infra chart dependencies (downloads Temporal subchart)
-helm dependency build ./continuum-infra
+helm dependency update ./continuum-infra
 
 # Install infrastructure (PostgreSQL, Temporal, Kafka, MinIO, Mosquitto)
 helm install continuum-infra ./continuum-infra \
