@@ -157,7 +157,7 @@ clusterManager:
     # Namespace where workbench instances will be created (configurable per env)
     namespace: continuum-workbench
     # Default image for workbench instances
-    defaultImage: projectcontinuum/continuum-workbench:0.0.5
+    defaultImage: projectcontinuum/continuum-workbench:latest
   resources:
     requests:
       cpu: 250m
