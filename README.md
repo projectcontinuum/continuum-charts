@@ -15,6 +15,48 @@ This directory contains three Helm charts for deploying Project Continuum on Kub
 - Helm v3.12+
 - `kubectl` configured to target your cluster
 
+## Quick Launch with Minikube
+
+> [!TIP]
+> **Want to try Continuum in under 5 minutes?** Just copy-paste the commands below — no configuration needed.
+
+**Prerequisites:** [Minikube](https://minikube.sigs.k8s.io/docs/start/) and [Helm](https://helm.sh/docs/intro/install/) installed.
+
+```bash
+# Start minikube (4 CPUs, 8GB RAM recommended)
+minikube start --cpus=4 --memory=8192
+
+# Create the namespaces
+kubectl create namespace continuum-dev
+kubectl create namespace continuum-workbench-dev
+
+# Build infra chart dependencies (downloads Temporal subchart)
+helm dependency build ./continuum-infra
+
+# Install infrastructure (PostgreSQL, Temporal, Kafka, MinIO, Mosquitto)
+helm install continuum-infra ./continuum-infra \
+  -n continuum-dev \
+  -f continuum-infra/values-dev.yaml \
+  --wait --timeout 15m
+
+# Install platform (Cloud Gateway, API Server, Cluster Manager, Workers)
+helm install continuum-platform ./continuum-platform \
+  -n continuum-dev \
+  -f continuum-platform/values-dev.yaml \
+  --wait --timeout 10m
+
+# Verify everything is running
+kubectl get pods -n continuum-dev
+```
+
+Once all pods are `Running`, port-forward the Cloud Gateway:
+
+```bash
+kubectl port-forward svc/continuum-platform-cloud-gateway 8080:8080 -n continuum-dev
+```
+
+Open the UI in your browser: **http://localhost:8080/cluster-manager/ui/**
+
 ## Dev vs Production Temporal Backend
 
 The Temporal persistence backend differs between environments:
