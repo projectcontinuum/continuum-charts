@@ -6,7 +6,6 @@ Components:
   - API Server
   - Orchestration Service
   - Message Bridge
-  - Workbench (IDE frontend)
   - Feature Base Worker
   - Feature Cheminformatics Worker
 
@@ -16,10 +15,8 @@ To verify the deployment:
 
 Access the platform:
 
-  # Cloud Gateway (single entry point for all APIs)
+  # Cloud Gateway (single entry point)
   kubectl port-forward svc/{{ include "continuum-platform.cloud-gateway.fullname" . }} 8080:8080 -n {{ .Release.Namespace }}
-  curl http://localhost:8080/actuator/health
 
-  # Workbench IDE
-  kubectl port-forward svc/{{ include "continuum-platform.workbench.fullname" . }} 3002:8080 -n {{ .Release.Namespace }}
-  # Open http://localhost:3002 in your browser
+  # Open the UI
+  # http://localhost:8080/cluster-manager/ui/

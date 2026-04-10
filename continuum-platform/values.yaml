@@ -194,31 +194,6 @@ messageBridge:
   tolerations: []
   affinity: {}
 
-# ============================================================
-# continuum-workbench (frontend IDE)
-# ============================================================
-workbench:
-  enabled: true
-  image:
-    repository: projectcontinuum/continuum-workbench
-    tag: "0.0.5"
-    pullPolicy: IfNotPresent
-  replicas: 1
-  port: 8080
-  service:
-    type: ClusterIP
-    port: 8080
-  resources:
-    requests:
-      cpu: 200m
-      memory: 256Mi
-    limits:
-      cpu: "1"
-      memory: 512Mi
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-
 
 # ============================================================
 # Feature Workers (horizontally scalable)

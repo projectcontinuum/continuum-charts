@@ -85,10 +85,6 @@ tcp://{{ .Values.infra.mosquitto.host }}:{{ .Values.infra.mosquitto.port }}
 {{- include "continuum-platform.fullname" . -}}-message-bridge
 {{- end }}
 
-{{- define "continuum-platform.workbench.fullname" -}}
-{{- include "continuum-platform.fullname" . -}}-workbench
-{{- end }}
-
 {{- define "continuum-platform.feature-base.fullname" -}}
 {{- include "continuum-platform.fullname" . -}}-feature-base
 {{- end }}
