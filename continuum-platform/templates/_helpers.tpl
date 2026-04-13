@@ -101,4 +101,8 @@ tcp://{{ .Values.infra.mosquitto.host }}:{{ .Values.infra.mosquitto.port }}
 {{- include "continuum-platform.fullname" . -}}-cloud-gateway
 {{- end }}
 
+{{- define "continuum-platform.credentials-server.fullname" -}}
+{{- include "continuum-platform.fullname" . -}}-credentials-server
+{{- end }}
+
 

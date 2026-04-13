@@ -170,6 +170,35 @@ clusterManager:
   affinity: {}
 
 # ============================================================
+# continuum-credentials-server
+# ============================================================
+credentialsServer:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-credentials-server
+    tag: "0.0.11"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  encryption:
+    # Generate a 32-byte (256-bit) key: openssl rand -base64 32
+    masterKey: ""                  # REQUIRED — Base64-encoded 256-bit AES key
+  existingEncryptionSecret: ""     # Alternative: reference an existing secret with key: master-key
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
 # continuum-message-bridge
 # ============================================================
 messageBridge:

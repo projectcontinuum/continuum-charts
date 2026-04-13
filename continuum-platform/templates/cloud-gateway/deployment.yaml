@@ -68,6 +68,22 @@ spec:
             capabilities:
               drop:
                 - ALL
+        {{- if .Values.credentialsServer.enabled }}
+        - name: wait-for-credentials-server
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ include "continuum-platform.credentials-server.fullname" . }} {{ .Values.credentialsServer.service.port | default 8080 }}; do
+                echo "Waiting for Credentials Server..."; sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        {{- end }}
       containers:
         - name: cloud-gateway
           image: "{{ .Values.cloudGateway.image.repository }}:{{ .Values.cloudGateway.image.tag | default .Chart.AppVersion }}"
@@ -98,6 +114,10 @@ spec:
               value: "http://{{ include "continuum-platform.api-server.fullname" . }}:{{ .Values.apiServer.service.port | default 8080 }}"
             - name: CONTINUUM_CLUSTER_MANAGER_URL
               value: "http://{{ include "continuum-platform.cluster-manager.fullname" . }}:{{ .Values.clusterManager.service.port | default 8080 }}"
+            {{- if .Values.credentialsServer.enabled }}
+            - name: CONTINUUM_CREDENTIALS_SERVER_URL
+              value: "http://{{ include "continuum-platform.credentials-server.fullname" . }}:{{ .Values.credentialsServer.service.port | default 8080 }}"
+            {{- end }}
           startupProbe:
             httpGet:
               path: /actuator/health
