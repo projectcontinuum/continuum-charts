@@ -70,7 +70,7 @@ cloudGateway:
   enabled: true
   image:
     repository: projectcontinuum/continuum-cloud-gateway
-    tag: "0.0.10"
+    tag: "0.0.11"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
