@@ -3,6 +3,9 @@
 # Usage: helm install continuum-platform ./continuum-platform -f continuum-platform/values.yaml -f continuum-platform/values-dev.yaml -n continuum-dev --create-namespace
 # ============================================================
 
+global:
+  imagePullPolicy: Always
+
 secrets:
   postgresql:
     username: continuum_owner
