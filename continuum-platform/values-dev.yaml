@@ -72,7 +72,7 @@ credentialsServer:
   replicas: 1
   encryption:
     # Generate a 32-byte (256-bit) key: openssl rand -base64 32
-    masterKey: "ZGV2LWNyZWRlbnRpYWxzLWVuY3J5cHRpb24ta2V5MQ=="   # dev-only key
+    masterKey: "0vlRfevA4YFs5ZPFeOq3PCQQTp+qYNhvjePZXYiRro0="   # dev-only key
   resources:
     requests:
       cpu: 100m
