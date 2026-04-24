@@ -145,7 +145,7 @@ clusterManager:
   enabled: true
   image:
     repository: projectcontinuum/continuum-cluster-manager
-    tag: "0.0.10"
+    tag: "0.0.11"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
