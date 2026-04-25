@@ -231,7 +231,7 @@ featureBase:
   enabled: true
   image:
     repository: projectcontinuum/continuum-feature-base
-    tag: "0.0.5"
+    tag: "0.0.6"
     pullPolicy: IfNotPresent
   replicas: 1
   taskQueue: CONTINUUM_FEATURE_BASE_TASK_QUEUE
