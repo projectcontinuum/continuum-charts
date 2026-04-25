@@ -158,6 +158,8 @@ clusterManager:
     namespace: continuum-workbench
     # Default image for workbench instances
     defaultImage: projectcontinuum/continuum-workbench:latest
+    # Image pull policy for workbench instances (Always, IfNotPresent, Never)
+    imagePullPolicy: IfNotPresent
   resources:
     requests:
       cpu: 250m

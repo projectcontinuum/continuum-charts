@@ -71,6 +71,8 @@ spec:
               value: {{ .Values.clusterManager.workbench.defaultImage | quote }}
             - name: WORKBENCH_NAMESPACE
               value: {{ .Values.clusterManager.workbench.namespace | quote }}
+            - name: WORKBENCH_IMAGE_PULL_POLICY
+              value: {{ .Values.clusterManager.workbench.imagePullPolicy | default "IfNotPresent" | quote }}
           startupProbe:
             httpGet:
               path: /actuator/health

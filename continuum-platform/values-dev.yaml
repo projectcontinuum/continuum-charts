@@ -60,6 +60,7 @@ clusterManager:
   workbench:
     namespace: continuum-workbench-dev
     defaultImage: projectcontinuum/continuum-workbench:0.0.5
+    imagePullPolicy: Always
   resources:
     requests:
       cpu: 100m
