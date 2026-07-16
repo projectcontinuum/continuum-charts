@@ -3,6 +3,9 @@
 # Usage: helm install continuum-platform ./continuum-platform -f continuum-platform/values.yaml -f continuum-platform/values-dev.yaml -n continuum-dev --create-namespace
 # ============================================================
 
+global:
+  imagePullPolicy: Always
+
 secrets:
   postgresql:
     username: continuum_owner
@@ -12,6 +15,16 @@ secrets:
     rootPassword: "dev-minio-secret"
 
 # Scale down for development
+cloudGateway:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
 apiServer:
   replicas: 1
   resources:
@@ -42,15 +55,32 @@ messageBridge:
       cpu: 500m
       memory: 768Mi
 
-workbench:
+clusterManager:
   replicas: 1
+  workbench:
+    namespace: continuum-workbench-dev
+    defaultImage: projectcontinuum/continuum-workbench:0.0.5
+    imagePullPolicy: Always
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 250m
       memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+credentialsServer:
+  replicas: 1
+  encryption:
+    # Generate a 32-byte (256-bit) key: openssl rand -base64 32
+    masterKey: "0vlRfevA4YFs5ZPFeOq3PCQQTp+qYNhvjePZXYiRro0="   # dev-only key
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
 featureBase:
   replicas: 1

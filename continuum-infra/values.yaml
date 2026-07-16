@@ -64,6 +64,11 @@ postgresql:
     # The Secret must contain the keys: postgres-password, continuum-password.
     existingSecret: ""
 
+  # ---- Connection limits ----------------------------------------------------
+  # Maximum number of concurrent connections. Default PostgreSQL is 100.
+  # Increase this if running multiple services (Temporal, Keycloak, etc.)
+  maxConnections: 100
+
   # ---- Persistence ----------------------------------------------------------
   persistence:
     # Size of the PVC for the data directory (/var/lib/postgresql/data).
@@ -494,41 +499,4 @@ minio:
   nodeSelector: {}
   tolerations: []
 
-# =============================================================================
-# Ingress — optional external access to UI services
-# =============================================================================
-# When enabled, an Ingress resource is created for each UI endpoint.
-# Configure TLS and annotations to match your ingress controller.
-# -----------------------------------------------------------------------------
-ingress:
-  enabled: false
 
-  # Ingress class to use (e.g. nginx, traefik, alb).
-  className: nginx
-
-  # Extra annotations applied to every Ingress resource.
-  # Example:
-  #   annotations:
-  #     cert-manager.io/cluster-issuer: letsencrypt-prod
-  annotations: {}
-
-  hosts:
-    temporalUi:
-      host: temporal.example.com
-    kafkaUi:
-      host: kafka-ui.example.com
-    minioConsole:
-      host: minio-console.example.com
-    mosquitto:
-      host: mqtt.example.com
-
-  # TLS configuration.
-  # Example:
-  #   tls:
-  #     - secretName: continuum-tls
-  #       hosts:
-  #         - temporal.example.com
-  #         - kafka-ui.example.com
-  #         - minio-console.example.com
-  #         - mqtt.example.com
-  tls: []

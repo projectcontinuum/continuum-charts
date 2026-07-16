@@ -85,10 +85,6 @@ tcp://{{ .Values.infra.mosquitto.host }}:{{ .Values.infra.mosquitto.port }}
 {{- include "continuum-platform.fullname" . -}}-message-bridge
 {{- end }}
 
-{{- define "continuum-platform.workbench.fullname" -}}
-{{- include "continuum-platform.fullname" . -}}-workbench
-{{- end }}
-
 {{- define "continuum-platform.feature-base.fullname" -}}
 {{- include "continuum-platform.fullname" . -}}-feature-base
 {{- end }}
@@ -96,3 +92,17 @@ tcp://{{ .Values.infra.mosquitto.host }}:{{ .Values.infra.mosquitto.port }}
 {{- define "continuum-platform.feature-cheminformatics.fullname" -}}
 {{- include "continuum-platform.fullname" . -}}-feature-cheminformatics
 {{- end }}
+
+{{- define "continuum-platform.cluster-manager.fullname" -}}
+{{- include "continuum-platform.fullname" . -}}-cluster-manager
+{{- end }}
+
+{{- define "continuum-platform.cloud-gateway.fullname" -}}
+{{- include "continuum-platform.fullname" . -}}-cloud-gateway
+{{- end }}
+
+{{- define "continuum-platform.credentials-server.fullname" -}}
+{{- include "continuum-platform.fullname" . -}}-credentials-server
+{{- end }}
+
+

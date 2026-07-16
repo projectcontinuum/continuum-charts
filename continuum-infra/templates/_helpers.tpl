@@ -98,3 +98,4 @@ Format: PLAINTEXT://kafka-0.kafka-headless:19092,PLAINTEXT://kafka-1.kafka-headl
 {{- end -}}
 {{- join "," $brokers -}}
 {{- end }}
+

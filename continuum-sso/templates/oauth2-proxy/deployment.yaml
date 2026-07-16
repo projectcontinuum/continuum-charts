@@ -1,0 +1,159 @@
+{{- if .Values.oauth2Proxy.enabled }}
+{{- $fullname := include "continuum-sso.fullname" . }}
+{{- $cookie := .Values.oauth2Proxy.cookie }}
+{{- $keycloak := .Values.oauth2Proxy.keycloak }}
+{{- $image := .Values.oauth2Proxy.image }}
+{{- $scheme := ternary "https" "http" $cookie.secure }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-oauth2-proxy
+  labels:
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: oauth2-proxy
+spec:
+  replicas: {{ .Values.oauth2Proxy.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "continuum-sso.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        {{- include "continuum-sso.labels" . | nindent 8 }}
+        app.kubernetes.io/component: oauth2-proxy
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/oauth2-proxy/secret.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: oauth2-proxy
+          image: "{{ $image.repository }}:{{ $image.tag }}"
+          imagePullPolicy: {{ $image.pullPolicy | default .Values.global.imagePullPolicy }}
+          args:
+            - --http-address=0.0.0.0:4180
+            - --provider=keycloak-oidc
+            - --oidc-issuer-url={{ $keycloak.issuerUrl }}
+            - --redirect-url={{ $scheme }}://{{ .Values.oauth2Proxy.publicHost }}{{ .Values.oauth2Proxy.callbackPath | default "/oauth2/callback" }}
+            - --upstream=static://202
+            # Required for nginx auth_request
+            - --reverse-proxy=true
+            # Skip OAuth2 Proxy provider button - users will use landing page buttons instead
+            - --skip-provider-button={{ .Values.oauth2Proxy.skipProviderButton | default true }}
+            # Set X-Auth-Request-* headers for nginx to forward to backends
+            - --set-xauthrequest=true
+            # Whitelist domains for redirect after authentication
+            - --whitelist-domain=.{{ .Values.oauth2Proxy.cookieDomain }}
+            # Cookie domain to share authentication across subdomains
+            - --cookie-domain=.{{ .Values.oauth2Proxy.cookieDomain }}
+            # CSRF cookie settings
+            - --cookie-csrf-per-request=true
+            - --cookie-csrf-expire=5m
+            # Email domains
+            {{- range .Values.oauth2Proxy.emailDomains }}
+            - --email-domain={{ . }}
+            {{- end }}
+            # Cookie configuration
+            - --cookie-name={{ $cookie.name }}
+            - --cookie-secure={{ $cookie.secure }}
+            - --cookie-samesite=lax
+            - --cookie-expire={{ $cookie.expire }}
+            - --cookie-refresh={{ $cookie.refresh }}
+            # Keycloak scopes
+            {{- if $keycloak.scope }}
+            - --scope={{ $keycloak.scope }}
+            {{- end }}
+            # Keycloak allowed groups
+            {{- range $keycloak.allowedGroups }}
+            - --allowed-group={{ . }}
+            {{- end }}
+            # Skip TLS verification for OIDC provider (dev only)
+            {{- if .Values.oauth2Proxy.insecureOidcSkipVerify }}
+            - --ssl-insecure-skip-verify=true
+            - --insecure-oidc-skip-issuer-verification=true
+            - --insecure-oidc-allow-unverified-email=true
+            {{- end }}
+            # Skip audience verification (useful when Keycloak returns 'account' as audience)
+            {{- if .Values.oauth2Proxy.oidcExtraAudiences }}
+            {{- range .Values.oauth2Proxy.oidcExtraAudiences }}
+            - --oidc-extra-audience={{ . }}
+            {{- end }}
+            {{- end }}
+            # Pass query parameters to OIDC provider (for kc_idp_hint support)
+            - --pass-authorization-header=true
+            # Additional args
+            {{- range .Values.oauth2Proxy.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          env:
+            - name: OAUTH2_PROXY_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  {{- if $keycloak.existingSecret }}
+                  name: {{ $keycloak.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-oauth2-proxy
+                  {{- end }}
+                  key: client-id
+            - name: OAUTH2_PROXY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  {{- if $keycloak.existingSecret }}
+                  name: {{ $keycloak.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-oauth2-proxy
+                  {{- end }}
+                  key: client-secret
+            - name: OAUTH2_PROXY_COOKIE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  {{- if $cookie.existingSecret }}
+                  name: {{ $cookie.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-oauth2-proxy
+                  {{- end }}
+                  key: cookie-secret
+          ports:
+            - name: http
+              containerPort: 4180
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          {{- with .Values.oauth2Proxy.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 2000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      {{- with .Values.oauth2Proxy.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.oauth2Proxy.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.oauth2Proxy.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

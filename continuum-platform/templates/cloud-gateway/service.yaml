@@ -1,0 +1,19 @@
+{{- if .Values.cloudGateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "continuum-platform.cloud-gateway.fullname" . }}
+  labels:
+    app.kubernetes.io/component: cloud-gateway
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.cloudGateway.service.port | default 8080 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/component: cloud-gateway
+    {{- include "continuum-platform.selectorLabels" . | nindent 4 }}
+{{- end }}

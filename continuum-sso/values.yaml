@@ -1,0 +1,304 @@
+# =============================================================================
+# Project Continuum — SSO Helm Values
+# =============================================================================
+# Default values for the continuum-sso chart.
+# This chart deploys OAuth2 Proxy for Single Sign-On authentication with Keycloak.
+#
+# Override per-environment with values-<env>.yaml (e.g. values-dev.yaml).
+# =============================================================================
+# -----------------------------------------------------------------------------
+# Global settings shared across all templates
+# -----------------------------------------------------------------------------
+global:
+  # Default pull policy for every container image in this chart.
+  imagePullPolicy: IfNotPresent
+  # References to Kubernetes Secrets that contain private-registry credentials.
+  imagePullSecrets: []
+# =============================================================================
+# OAuth2 Proxy — Keycloak OIDC authentication
+# =============================================================================
+# Deploys oauth2-proxy configured for Keycloak as the identity provider.
+# -----------------------------------------------------------------------------
+oauth2Proxy:
+  enabled: true
+  # oauth2-proxy image configuration.
+  image:
+    repository: quay.io/oauth2-proxy/oauth2-proxy
+    tag: "v7.6.0"
+    pullPolicy: ""  # Defaults to global.imagePullPolicy
+  # Number of replicas.
+  replicas: 1
+  # ---------------------------------------------------------------------------
+  # Keycloak Configuration
+  # ---------------------------------------------------------------------------
+  keycloak:
+    # Keycloak OIDC issuer URL.
+    # Format: https://<keycloak-host>/realms/<realm-name>
+    issuerUrl: "https://keycloak.example.com/realms/continuum"
+    # OAuth2 client credentials.
+    # Leave empty here and supply via --set or existingSecret in production.
+    clientId: ""
+    clientSecret: ""
+    # Name of an existing Secret containing keys: client-id, client-secret.
+    # If set, clientId and clientSecret above are ignored.
+    existingSecret: ""
+    # OIDC scopes to request.
+    scope: "openid profile email"
+    # Optional: Restrict access to users in specific Keycloak groups.
+    # Example: ["admin", "developers"]
+    allowedGroups: []
+  # ---------------------------------------------------------------------------
+  # OAuth2 Proxy Settings
+  # ---------------------------------------------------------------------------
+  # Public hostname used for OAuth redirect URIs.
+  # This should match your application's public domain.
+  publicHost: "app.example.com"
+  # Cookie domain for sharing authentication across subdomains.
+  # Set to your root domain (e.g., "example.com" for *.example.com).
+  cookieDomain: "example.com"
+  # Cookie configuration.
+  cookie:
+    # Name of the session cookie.
+    name: "_oauth2_proxy"
+    # Secret used to encrypt the session cookie. Must be 16, 24, or 32 bytes.
+    # Leave empty here and supply via --set or existingSecret in production.
+    secret: ""
+    # Name of an existing Secret containing the key `cookie-secret`.
+    existingSecret: ""
+    # If true, cookies are only sent over HTTPS.
+    secure: true
+    # Cookie expiration time.
+    expire: "168h"
+    # Cookie refresh interval.
+    refresh: "1h"
+  # Emails/domains allowed to authenticate. Use "*" to allow all.
+  emailDomains:
+    - "*"
+  # Skip TLS verification for OIDC provider (dev only - DO NOT enable in production!)
+  insecureOidcSkipVerify: false
+  # Additional command-line arguments for oauth2-proxy.
+  extraArgs: []
+  # ---------------------------------------------------------------------------
+  # Service configuration
+  # ---------------------------------------------------------------------------
+  service:
+    type: ClusterIP
+    port: 4180
+  # ---------------------------------------------------------------------------
+  # Ingress configuration
+  # ---------------------------------------------------------------------------
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: auth.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  # ---------------------------------------------------------------------------
+  # Resources
+  # ---------------------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  # ---------------------------------------------------------------------------
+  # Pod scheduling
+  # ---------------------------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# =============================================================================
+# Keycloak — Identity Provider
+# =============================================================================
+# Deploys Keycloak as the identity provider for SSO.
+# Set enabled: false if using an external Keycloak instance.
+# -----------------------------------------------------------------------------
+keycloak:
+  enabled: true
+
+  # Keycloak image configuration.
+  image:
+    repository: quay.io/keycloak/keycloak
+    tag: "24.0"
+    pullPolicy: ""  # Defaults to global.imagePullPolicy
+
+  # Number of replicas.
+  replicas: 1
+
+  # ---------------------------------------------------------------------------
+  # Keycloak Settings
+  # ---------------------------------------------------------------------------
+  # Hostname for Keycloak (used in production mode).
+  # hostname: "keycloak.example.com"
+
+  # Proxy mode: edge, reencrypt, passthrough
+  proxy: "edge"
+
+  # Realm name to create/use.
+  realm: "continuum"
+
+  # ---------------------------------------------------------------------------
+  # Admin Authentication
+  # ---------------------------------------------------------------------------
+  auth:
+    # Admin username.
+    adminUser: "admin"
+    # Admin password. Leave empty to auto-generate.
+    adminPassword: ""
+    # Name of an existing Secret containing keys: admin-user, admin-password.
+    existingSecret: ""
+
+  # ---------------------------------------------------------------------------
+  # Database Configuration
+  # ---------------------------------------------------------------------------
+  # By default, Keycloak uses an embedded H2 database (dev mode).
+  # For production, configure an external PostgreSQL database.
+  database:
+    enabled: false
+    vendor: "postgres"
+    # JDBC URL for the database.
+    # url: "jdbc:postgresql://continuum-infra-postgresql:5432/keycloak"
+    url: ""
+    username: "keycloak"
+    password: ""
+    # Name of an existing Secret containing keys: db-username, db-password.
+    existingSecret: ""
+
+  # Additional command-line arguments for Keycloak.
+  extraArgs: []
+
+  # Additional environment variables.
+  extraEnv: []
+
+  # ---------------------------------------------------------------------------
+  # Service configuration
+  # ---------------------------------------------------------------------------
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # ---------------------------------------------------------------------------
+  # Ingress configuration
+  # ---------------------------------------------------------------------------
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: keycloak.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+  # ---------------------------------------------------------------------------
+  # Resources
+  # ---------------------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi
+
+  # ---------------------------------------------------------------------------
+  # Pod scheduling
+  # ---------------------------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# =============================================================================
+# Platform Ingress — Protected services behind OAuth2 Proxy
+# =============================================================================
+# Creates ingress resources for platform services with OAuth2 authentication.
+# -----------------------------------------------------------------------------
+platformIngress:
+  enabled: false
+  className: ""
+  # Enable OAuth2 authentication via oauth2-proxy
+  auth:
+    enabled: true
+  # Additional annotations for the ingress
+  annotations: {}
+  # Host configurations
+  hosts:
+    - host: app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: continuum-sso-landing-page
+          servicePort: 8080
+  tls: []
+
+# =============================================================================
+# Landing Page — Authentication entry point
+# =============================================================================
+# Deploys the landing page that handles SSO authentication flows.
+# The landing page provides sign-in buttons for various identity providers
+# and manages the OAuth2 flow with Keycloak.
+# -----------------------------------------------------------------------------
+landingPage:
+  enabled: true
+
+  # Landing page image configuration.
+  image:
+    repository: projectcontinuum/landing-page
+    tag: "0.0.11"
+    pullPolicy: ""  # Defaults to global.imagePullPolicy
+
+  # Number of replicas.
+  replicas: 1
+
+  # ---------------------------------------------------------------------------
+  # SSO Configuration
+  # ---------------------------------------------------------------------------
+  # These values are automatically derived from the oauth2Proxy and keycloak
+  # configurations, but can be overridden if needed.
+
+  # Keycloak URL (auto-derived from keycloak.ingress.hosts if not set)
+  keycloakUrl: ""
+  # Keycloak realm name (defaults to keycloak.realm)
+  keycloakRealm: ""
+  # OAuth2 client ID for the landing page
+  keycloakClientId: "continuum"
+  # Public OAuth2 Proxy URL (auto-derived from oauth2Proxy.publicHost if not set)
+  publicAuthUrl: ""
+  # Public landing page URL (required)
+  publicAppUrl: ""
+  # Cookie domain for cross-subdomain auth (auto-derived from oauth2Proxy.cookieDomain if not set)
+  cookieDomain: ""
+
+  # ---------------------------------------------------------------------------
+  # Service configuration
+  # ---------------------------------------------------------------------------
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # ---------------------------------------------------------------------------
+  # Resources
+  # ---------------------------------------------------------------------------
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  # ---------------------------------------------------------------------------
+  # Pod scheduling
+  # ---------------------------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+

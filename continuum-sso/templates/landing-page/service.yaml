@@ -1,0 +1,21 @@
+{{- if .Values.landingPage.enabled }}
+{{- $fullname := include "continuum-sso.fullname" . }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-landing-page
+  labels:
+    app.kubernetes.io/component: landing-page
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.landingPage.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.landingPage.service.port | default 8080 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/component: landing-page
+    {{- include "continuum-sso.selectorLabels" . | nindent 4 }}
+{{- end }}
+

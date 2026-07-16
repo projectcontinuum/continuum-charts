@@ -1,0 +1,129 @@
+{{- if .Values.keycloak.enabled }}
+{{- $fullname := include "continuum-sso.fullname" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-keycloak
+  labels:
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+spec:
+  replicas: {{ .Values.keycloak.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "continuum-sso.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: keycloak
+  template:
+    metadata:
+      labels:
+        {{- include "continuum-sso.labels" . | nindent 8 }}
+        app.kubernetes.io/component: keycloak
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: keycloak
+          image: "{{ .Values.keycloak.image.repository }}:{{ .Values.keycloak.image.tag }}"
+          imagePullPolicy: {{ .Values.keycloak.image.pullPolicy | default .Values.global.imagePullPolicy }}
+          args:
+            - start-dev
+            {{- if .Values.keycloak.proxy }}
+            - --proxy={{ .Values.keycloak.proxy }}
+            {{- end }}
+            {{- if .Values.keycloak.hostname }}
+            - --hostname={{ .Values.keycloak.hostname }}
+            {{- end }}
+            {{- range .Values.keycloak.extraArgs }}
+            - {{ . }}
+            {{- end }}
+          env:
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.keycloak.auth.existingSecret }}
+                  name: {{ .Values.keycloak.auth.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-keycloak
+                  {{- end }}
+                  key: admin-user
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.keycloak.auth.existingSecret }}
+                  name: {{ .Values.keycloak.auth.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-keycloak
+                  {{- end }}
+                  key: admin-password
+            - name: KC_HTTP_PORT
+              value: "8080"
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_METRICS_ENABLED
+              value: "true"
+            {{- if .Values.keycloak.database.enabled }}
+            - name: KC_DB
+              value: {{ .Values.keycloak.database.vendor | default "postgres" }}
+            - name: KC_DB_URL
+              value: {{ .Values.keycloak.database.url }}
+            - name: KC_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.keycloak.database.existingSecret }}
+                  name: {{ .Values.keycloak.database.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-keycloak
+                  {{- end }}
+                  key: db-username
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.keycloak.database.existingSecret }}
+                  name: {{ .Values.keycloak.database.existingSecret }}
+                  {{- else }}
+                  name: {{ $fullname }}-keycloak
+                  {{- end }}
+                  key: db-password
+            {{- end }}
+            {{- range .Values.keycloak.extraEnv }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          {{- with .Values.keycloak.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.keycloak.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.keycloak.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.keycloak.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+

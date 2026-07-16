@@ -1,0 +1,107 @@
+{{- if .Values.credentialsServer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "continuum-platform.credentials-server.fullname" . }}
+  labels:
+    app.kubernetes.io/component: credentials-server
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.credentialsServer.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: credentials-server
+      {{- include "continuum-platform.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: credentials-server
+        {{- include "continuum-platform.selectorLabels" . | nindent 8 }}
+        {{- include "continuum-platform.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: wait-for-postgresql
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ .Values.infra.postgresql.host }} {{ .Values.infra.postgresql.port }}; do
+                echo "Waiting for PostgreSQL..."; sleep 5;
+              done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: credentials-server
+          image: "{{ .Values.credentialsServer.image.repository }}:{{ .Values.credentialsServer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: CONTINUUM_DB_URL
+              value: {{ include "continuum-platform.infra.db.url" . | quote }}
+            - name: CONTINUUM_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "continuum-platform.postgresql.secretName" . }}
+                  key: username
+            - name: CONTINUUM_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "continuum-platform.postgresql.secretName" . }}
+                  key: password
+            - name: CREDENTIALS_ENCRYPTION_MASTER_KEY
+              {{- if .Values.credentialsServer.existingEncryptionSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentialsServer.existingEncryptionSecret }}
+                  key: master-key
+              {{- else }}
+              value: {{ .Values.credentialsServer.encryption.masterKey | quote }}
+              {{- end }}
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.credentialsServer.resources | nindent 12 }}
+      {{- with .Values.credentialsServer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.credentialsServer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

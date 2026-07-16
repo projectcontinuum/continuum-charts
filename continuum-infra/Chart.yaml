@@ -1,6 +1,6 @@
 apiVersion: v2
 name: continuum-infra
-description: Infrastructure services for Project Continuum — Temporal, Kafka, PostgreSQL, MinIO, Mosquitto
+description: Core infrastructure services for Project Continuum — Temporal, Kafka, PostgreSQL, MinIO, Mosquitto
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
@@ -9,10 +9,8 @@ keywords:
   - infrastructure
   - temporal
   - kafka
-  - cassandra
-  - elasticsearch
-  - minio
   - postgresql
+  - minio
   - mosquitto
 maintainers:
   - name: Project Continuum

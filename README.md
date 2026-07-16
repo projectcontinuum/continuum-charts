@@ -1,18 +1,65 @@
 # Continuum Helm Charts
 
-This directory contains two Helm charts for deploying Project Continuum on Kubernetes:
+This directory contains three Helm charts for deploying Project Continuum on Kubernetes:
 
 
-| Chart                | Description                                                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `continuum-infra`    | Infrastructure layer — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO                                       |
-| `continuum-platform` | Application layer — API Server, Orchestration Service, Message Bridge, Workbench, Feature Base Worker, Feature Cheminformatics Worker |
+| Chart                | Description                                                                                                                            | Required |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `continuum-infra`    | Core infrastructure services — PostgreSQL, Temporal, Kafka, Schema Registry, Kafka UI, Mosquitto, MinIO                               | Yes      |
+| `continuum-platform` | Application services — API Server, Orchestration Service, Message Bridge, Workbench, Feature Workers                                  | Yes      |
+| `continuum-sso`      | Optional Single Sign-On — OAuth2 Proxy with Keycloak OIDC                                                                              | No       |
 
 ## Prerequisites
 
 - Kubernetes cluster (v1.26+)
 - Helm v3.12+
 - `kubectl` configured to target your cluster
+
+## Quick Launch with Minikube
+
+> [!TIP]
+> **Want to try Continuum in under 5 minutes?** Just copy-paste the commands below — no configuration needed.
+
+**Prerequisites:** [Minikube](https://minikube.sigs.k8s.io/docs/start/) and [Helm](https://helm.sh/docs/intro/install/) installed.
+
+```bash
+# Clone the repo
+git clone https://github.com/projectcontinuum/continuum-charts.git
+cd continuum-charts
+
+# Start minikube (4 CPUs, 8GB RAM recommended)
+minikube start --cpus=4 --memory=8192
+
+# Create the namespaces
+kubectl create namespace continuum-dev
+kubectl create namespace continuum-workbench-dev
+
+# Build infra chart dependencies (downloads Temporal subchart)
+helm dependency update ./continuum-infra
+
+# Install infrastructure (PostgreSQL, Temporal, Kafka, MinIO, Mosquitto)
+helm install continuum-infra ./continuum-infra \
+  -n continuum-dev \
+  -f continuum-infra/values-dev.yaml \
+  --wait --timeout 15m
+
+# Install platform (Cloud Gateway, API Server, Cluster Manager, Workers)
+helm install continuum-platform ./continuum-platform \
+  -n continuum-dev \
+  -f continuum-platform/values-dev.yaml \
+  --wait --timeout 10m
+
+# Verify everything is running
+kubectl get pods -n continuum-dev
+```
+
+Once all pods are `Running`, port-forward the Cloud Gateway:
+
+```bash
+kubectl port-forward svc/continuum-platform-cloud-gateway 8080:8080 -n continuum-dev
+```
+
+Open the UI in your browser: **http://localhost:8080/cluster-manager/ui/**
 
 ## Dev vs Production Temporal Backend
 
@@ -247,32 +294,111 @@ Open workbench in your browser: [Continuum-Workbench](http://localhost:3002/#/ho
 
 **Ingress (production):**
 
-Enable ingress in both charts' values files and configure your domain names:
+For external access, configure your own Ingress resources or use an ingress controller.
+If you need OAuth2 authentication with Keycloak, deploy the `continuum-sso` chart:
 
-```yaml
-# Infrastructure ingress
-ingress:
-  enabled: true
-  className: nginx
-  hosts:
-    temporalUi:
-      host: temporal.yourdomain.com
-    kafkaUi:
-      host: kafka-ui.yourdomain.com
-    minioConsole:
-      host: minio-console.yourdomain.com
+**Step 1: Create the Keycloak database in PostgreSQL**
+
+First, connect to the PostgreSQL pod and create the Keycloak database:
+
+```bash
+# Connect to PostgreSQL
+kubectl exec -it continuum-infra-postgresql-0 -n continuum-dev -- psql -U postgres
+
+# Run these SQL commands:
+CREATE USER keycloak WITH PASSWORD 'dev-keycloak-pass';
+CREATE DATABASE keycloak OWNER keycloak;
+GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
+\c keycloak
+GRANT ALL ON SCHEMA public TO keycloak;
+\q
 ```
 
+**Step 2: Create the required Kubernetes secrets**
+
+```bash
+# Create the Keycloak admin credentials secret
+kubectl create secret generic keycloak-admin \
+  --from-literal=admin-user=admin \
+  --from-literal=admin-password=admin \
+  -n continuum-dev
+
+# Create the OAuth2 Proxy cookie secret (32-byte random string)
+kubectl create secret generic oauth2-proxy-cookie \
+  --from-literal=cookie-secret=$(openssl rand -base64 32 | head -c 32) \
+  -n continuum-dev
+
+# Create the Keycloak client credentials secret (placeholder - update after Keycloak setup)
+kubectl create secret generic oauth2-proxy-client-creds \
+  --from-literal=client-id=REPLACE_WITH_CLIENT_ID \
+  --from-literal=client-secret=REPLACE_WITH_CLIENT_SECRET \
+  -n continuum-dev
+```
+
+**Step 3: Install the SSO chart**
+
+```bash
+helm install continuum-sso ./continuum-sso \
+  -n continuum-dev \
+  -f continuum-sso/values-dev.yaml \
+  --wait
+```
+
+**Step 4: Configure Keycloak realm and client**
+
+```bash
+# Port-forward to Keycloak
+kubectl port-forward svc/continuum-sso-keycloak 8080:8080 -n continuum-dev
+
+# Open http://localhost:8080 and login with admin/admin
+# 1. Create a realm named "continuum"
+# 2. Create a client with:
+#    - Client ID: continuum
+#    - Client authentication: ON
+#    - Valid redirect URIs:
+#      - https://auth.192.168.49.2.nip.io/oauth2/callback (OAuth2 Proxy callback)
+#      - https://continuum.192.168.49.2.nip.io/auth/keycloak-callback (Landing page callback for direct IdP flows)
+#    - Web origins: https://*.192.168.49.2.nip.io
+# 3. Copy the client secret from Credentials tab
+```
+
+**Step 5: Configure Identity Providers (optional - for SSO buttons)**
+
+To enable "Sign in with Google/GitHub/etc" buttons on the landing page:
+
+1. In Keycloak, go to Identity Providers
+2. Add providers (Google, GitHub, etc.) with their respective OAuth credentials
+3. Use the provider alias (e.g., `google`, `github`) - the landing page uses these as `kc_idp_hint`
+
+The landing page will redirect directly to Keycloak with `kc_idp_hint` parameter, which skips the Keycloak login page and goes straight to the selected IdP.
+
+**Step 6: Update the oauth2-proxy-client-creds secret with the actual client secret**
+
+```bash
+# Delete and recreate with the actual secret
+kubectl delete secret oauth2-proxy-client-creds -n continuum-dev
+kubectl create secret generic oauth2-proxy-client-creds \
+  --from-literal=client-id=continuum \
+  --from-literal=client-secret=YOUR_ACTUAL_CLIENT_SECRET \
+  -n continuum-dev
+
+# Restart oauth2-proxy to pick up the new secret
+kubectl rollout restart deployment continuum-sso-oauth2-proxy -n continuum-dev
+```
+
+Then configure your ingress annotations to use oauth2-proxy:
+
 ```yaml
-# Platform ingress
-ingress:
-  enabled: true
-  className: nginx
-  hosts:
-    workbench:
-      host: continuum.yourdomain.com
-    apiServer:
-      host: api.continuum.yourdomain.com
+# Example ingress with oauth2-proxy authentication
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-protected-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/auth-url: "http://continuum-sso-oauth2-proxy.continuum-dev.svc.cluster.local:4180/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://auth.192.168.49.2.nip.io/oauth2/start?rd=$escaped_request_uri"
+spec:
+  # ... your ingress spec
 ```
 
 ## Smoke Test

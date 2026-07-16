@@ -64,6 +64,31 @@ cacheStorage:
   accessMode: ReadWriteOnce
 
 # ============================================================
+# continuum-cloud-gateway (reverse proxy / single entry point)
+# ============================================================
+cloudGateway:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-cloud-gateway
+    tag: "0.0.11"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
 # continuum-api-server
 # ============================================================
 apiServer:
@@ -114,6 +139,68 @@ orchestrationService:
   affinity: {}
 
 # ============================================================
+# continuum-cluster-manager
+# ============================================================
+clusterManager:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-cluster-manager
+    tag: "0.0.11"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  # Workbench instance configuration
+  workbench:
+    # Namespace where workbench instances will be created (configurable per env)
+    namespace: continuum-workbench
+    # Default image for workbench instances
+    defaultImage: projectcontinuum/continuum-workbench:latest
+    # Image pull policy for workbench instances (Always, IfNotPresent, Never)
+    imagePullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
+# continuum-credentials-server
+# ============================================================
+credentialsServer:
+  enabled: true
+  image:
+    repository: projectcontinuum/continuum-credentials-server
+    tag: "0.0.11"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 8080
+  encryption:
+    # Generate a 32-byte (256-bit) key: openssl rand -base64 32
+    masterKey: ""                  # REQUIRED — Base64-encoded 256-bit AES key
+  existingEncryptionSecret: ""     # Alternative: reference an existing secret with key: master-key
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ============================================================
 # continuum-message-bridge
 # ============================================================
 messageBridge:
@@ -138,30 +225,6 @@ messageBridge:
   tolerations: []
   affinity: {}
 
-# ============================================================
-# continuum-workbench (frontend IDE)
-# ============================================================
-workbench:
-  enabled: true
-  image:
-    repository: projectcontinuum/continuum-workbench
-    tag: "0.0.5"
-    pullPolicy: IfNotPresent
-  replicas: 1
-  port: 8080
-  service:
-    type: ClusterIP
-    port: 8080
-  resources:
-    requests:
-      cpu: 200m
-      memory: 256Mi
-    limits:
-      cpu: "1"
-      memory: 512Mi
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
 
 # ============================================================
 # Feature Workers (horizontally scalable)
@@ -170,7 +233,7 @@ featureBase:
   enabled: true
   image:
     repository: projectcontinuum/continuum-feature-base
-    tag: "0.0.5"
+    tag: "0.0.6"
     pullPolicy: IfNotPresent
   replicas: 1
   taskQueue: CONTINUUM_FEATURE_BASE_TASK_QUEUE
@@ -214,20 +277,3 @@ featureCheminformatics:
   tolerations: []
   affinity: {}
 
-# ============================================================
-# Ingress (Workbench + API Server)
-# ============================================================
-ingress:
-  enabled: false
-  className: nginx
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-  hosts:
-    workbench:
-      host: continuum.example.com
-      path: /
-    apiServer:
-      host: api.continuum.example.com
-      path: /
-  tls: []

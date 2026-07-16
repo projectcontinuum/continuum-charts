@@ -1,0 +1,45 @@
+{{- if and .Values.keycloak.enabled .Values.keycloak.ingress.enabled }}
+{{- $fullname := include "continuum-sso.fullname" . }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-keycloak
+  labels:
+    {{- include "continuum-sso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+  {{- with .Values.keycloak.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.keycloak.ingress.className }}
+  ingressClassName: {{ .Values.keycloak.ingress.className }}
+  {{- end }}
+  {{- if .Values.keycloak.ingress.tls }}
+  tls:
+    {{- range .Values.keycloak.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      {{- if .secretName }}
+      secretName: {{ .secretName }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.keycloak.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $fullname }}-keycloak
+                port:
+                  number: {{ $.Values.keycloak.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}

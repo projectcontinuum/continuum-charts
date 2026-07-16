@@ -1,0 +1,147 @@
+# =============================================================================
+# Project Continuum — SSO Development Environment Overrides
+# =============================================================================
+# Usage:
+#   helm install continuum-sso ./continuum-sso -f continuum-sso/values-dev.yaml -n continuum-dev
+#
+# This file supplies development-specific configurations for SSO.
+#
+# WARNING: The configurations below are for DEVELOPMENT ONLY.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Keycloak — Identity Provider
+# -----------------------------------------------------------------------------
+keycloak:
+  enabled: true
+
+  auth:
+    # Use existing secret for admin credentials
+    existingSecret: keycloak-admin
+
+  # Database configuration - use PostgreSQL from continuum-infra
+  database:
+    enabled: true
+    vendor: "postgres"
+    url: "jdbc:postgresql://continuum-infra-postgresql:5432/keycloak"
+    existingSecret: keycloak-db
+
+  # Ingress for dev environment
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+    hosts:
+      - host: keycloak.192.168.49.2.nip.io
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - "*.192.168.49.2.nip.io"
+        secretName: continuum-tls
+
+  # Dev resources
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+# -----------------------------------------------------------------------------
+# OAuth2 Proxy
+# -----------------------------------------------------------------------------
+oauth2Proxy:
+  enabled: true
+  # Keycloak configuration
+  keycloak:
+    issuerUrl: "https://keycloak.192.168.49.2.nip.io/realms/continuum"
+    # Use existing secret for credentials in dev
+    existingSecret: oauth2-proxy-client-creds
+  # OAuth2 Proxy settings
+  publicHost: "auth.192.168.49.2.nip.io"
+  cookieDomain: "192.168.49.2.nip.io"
+  cookie:
+    existingSecret: oauth2-proxy-cookie
+    secure: true
+  # Skip TLS verification for self-signed certs in dev (DO NOT use in production!)
+  insecureOidcSkipVerify: true
+  # Extra audiences to allow (Keycloak returns 'account' by default)
+  oidcExtraAudiences:
+    - account
+  # Ingress for dev environment
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+    hosts:
+      - host: auth.192.168.49.2.nip.io
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - auth.192.168.49.2.nip.io
+        secretName: continuum-tls
+  # Dev resources
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# -----------------------------------------------------------------------------
+# Platform Ingress — Landing Page with OAuth2 authentication
+# -----------------------------------------------------------------------------
+platformIngress:
+  enabled: true
+  className: nginx
+  auth:
+    enabled: false  # Landing page is public - users click sign-in buttons
+  annotations: {}
+  hosts:
+    - host: continuum.192.168.49.2.nip.io
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: continuum-sso-landing-page
+          servicePort: 8080
+  tls:
+    - hosts:
+        - continuum.192.168.49.2.nip.io
+      secretName: continuum-tls
+
+# -----------------------------------------------------------------------------
+# Landing Page — Authentication entry point
+# -----------------------------------------------------------------------------
+landingPage:
+  enabled: true
+  image:
+    repository: projectcontinuum/landing-page
+    tag: "0.0.11"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  # SSO Configuration for dev environment
+  keycloakUrl: "https://keycloak.192.168.49.2.nip.io"
+  keycloakRealm: "continuum"
+  keycloakClientId: "continuum"
+  publicAuthUrl: "https://auth.192.168.49.2.nip.io"
+  publicAppUrl: "https://continuum.192.168.49.2.nip.io"
+  cookieDomain: ".192.168.49.2.nip.io"
+  # Dev resources
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+

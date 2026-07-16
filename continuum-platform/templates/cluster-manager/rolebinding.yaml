@@ -1,0 +1,19 @@
+{{- if .Values.clusterManager.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "continuum-platform.cluster-manager.fullname" . }}-workbench-manager
+  namespace: {{ .Values.clusterManager.workbench.namespace }}
+  labels:
+    app.kubernetes.io/component: cluster-manager
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "continuum-platform.cluster-manager.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "continuum-platform.cluster-manager.fullname" . }}-workbench-manager
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
+
