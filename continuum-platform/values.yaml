@@ -4,6 +4,7 @@
 global:
   imagePullPolicy: IfNotPresent
   imagePullSecrets: []
+  continuumPlatformVersion: "0.0.14"
 
 # ============================================================
 # Infrastructure service references
@@ -70,7 +71,6 @@ cloudGateway:
   enabled: true
   image:
     repository: projectcontinuum/continuum-cloud-gateway
-    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -95,7 +95,6 @@ apiServer:
   enabled: true
   image:
     repository: projectcontinuum/continuum-api-server
-    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -120,7 +119,6 @@ orchestrationService:
   enabled: true
   image:
     repository: projectcontinuum/continuum-orchestration-service
-    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -145,7 +143,6 @@ clusterManager:
   enabled: true
   image:
     repository: projectcontinuum/continuum-cluster-manager
-    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -178,7 +175,6 @@ credentialsServer:
   enabled: true
   image:
     repository: projectcontinuum/continuum-credentials-server
-    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -207,7 +203,6 @@ messageBridge:
   enabled: true
   image:
     repository: projectcontinuum/continuum-message-bridge
-    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
