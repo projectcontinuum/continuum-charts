@@ -70,7 +70,7 @@ cloudGateway:
   enabled: true
   image:
     repository: projectcontinuum/continuum-cloud-gateway
-    tag: "0.0.12"
+    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -95,7 +95,7 @@ apiServer:
   enabled: true
   image:
     repository: projectcontinuum/continuum-api-server
-    tag: "0.0.12"
+    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -120,7 +120,7 @@ orchestrationService:
   enabled: true
   image:
     repository: projectcontinuum/continuum-orchestration-service
-    tag: "0.0.12"
+    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -145,7 +145,7 @@ clusterManager:
   enabled: true
   image:
     repository: projectcontinuum/continuum-cluster-manager
-    tag: "0.0.12"
+    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -178,7 +178,7 @@ credentialsServer:
   enabled: true
   image:
     repository: projectcontinuum/continuum-credentials-server
-    tag: "0.0.12"
+    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -207,7 +207,7 @@ messageBridge:
   enabled: true
   image:
     repository: projectcontinuum/continuum-message-bridge
-    tag: "0.0.12"
+    tag: "0.0.14"
     pullPolicy: IfNotPresent
   replicas: 1
   port: 8080
@@ -233,7 +233,7 @@ featureBase:
   enabled: true
   image:
     repository: projectcontinuum/continuum-feature-base
-    tag: "0.0.6"
+    tag: "0.0.8"
     pullPolicy: IfNotPresent
   replicas: 1
   taskQueue: CONTINUUM_FEATURE_BASE_TASK_QUEUE
@@ -257,7 +257,7 @@ featureCheminformatics:
   enabled: true
   image:
     repository: projectcontinuum/continuum-feature-cheminformatics
-    tag: "0.0.4"
+    tag: "0.0.6"
     pullPolicy: IfNotPresent
   replicas: 1
   taskQueue: CONTINUUM_CHEMINFORMATICS_WORKER_TASK_QUEUE
