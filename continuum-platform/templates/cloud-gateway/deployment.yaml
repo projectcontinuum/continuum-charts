@@ -86,7 +86,7 @@ spec:
         {{- end }}
       containers:
         - name: cloud-gateway
-          image: "{{ .Values.cloudGateway.image.repository }}:{{ .Values.cloudGateway.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.cloudGateway.image.repository }}:{{ .Values.cloudGateway.image.tag | default .Values.global.continuumPlatformVersion | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
           securityContext:
             allowPrivilegeEscalation: false

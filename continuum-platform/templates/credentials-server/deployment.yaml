@@ -42,7 +42,7 @@ spec:
                 - ALL
       containers:
         - name: credentials-server
-          image: "{{ .Values.credentialsServer.image.repository }}:{{ .Values.credentialsServer.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.credentialsServer.image.repository }}:{{ .Values.credentialsServer.image.tag | default .Values.global.continuumPlatformVersion | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy | default "IfNotPresent" }}
           securityContext:
             allowPrivilegeEscalation: false
