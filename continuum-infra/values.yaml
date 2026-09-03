@@ -181,6 +181,10 @@ elasticsearch:
 temporal:
   enabled: true
 
+  # ---- Schema configuration ----------------------------------------------------
+  schema:
+    useHelmHooks: false
+
   # ---- Server configuration -------------------------------------------------
   server:
     config:

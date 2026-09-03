@@ -4,7 +4,7 @@
 global:
   imagePullPolicy: IfNotPresent
   imagePullSecrets: []
-  continuumPlatformVersion: "0.0.14"
+  continuumPlatformVersion: "0.0.15"
 
 # ============================================================
 # Infrastructure service references
