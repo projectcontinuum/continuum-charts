@@ -4,8 +4,11 @@ kind: Service
 metadata:
   name: {{ include "continuum-infra.schema-registry.fullname" . }}
   labels:
-    app.kubernetes.io/component: schema-registry
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "schema-registry" "extra" .Values.schemaRegistry.labels) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.schemaRegistry.annotations)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   type: ClusterIP
   ports:

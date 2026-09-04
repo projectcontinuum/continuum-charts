@@ -4,8 +4,11 @@ kind: Deployment
 metadata:
   name: {{ include "continuum-infra.mosquitto.fullname" . }}
   labels:
-    app.kubernetes.io/component: mosquitto
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   replicas: 1
   strategy:
@@ -17,9 +20,11 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: mosquitto
-        {{- include "continuum-infra.selectorLabels" . | nindent 8 }}
-        {{- include "continuum-infra.labels" . | nindent 8 }}
+        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels) | nindent 8 }}
+      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations)) }}
+      annotations:
+        {{- nindent 8 . }}
+      {{- end }}
     spec:
       securityContext:
         runAsUser: 1883

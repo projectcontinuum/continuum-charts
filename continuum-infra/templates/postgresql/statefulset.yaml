@@ -4,8 +4,11 @@ kind: StatefulSet
 metadata:
   name: {{ include "continuum-infra.postgresql.fullname" . }}
   labels:
-    app.kubernetes.io/component: postgresql
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "postgresql" "extra" .Values.postgresql.labels) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.postgresql.annotations)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   serviceName: {{ include "continuum-infra.postgresql.fullname" . }}
   replicas: 1
@@ -16,9 +19,11 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: postgresql
-        {{- include "continuum-infra.selectorLabels" . | nindent 8 }}
-        {{- include "continuum-infra.labels" . | nindent 8 }}
+        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "postgresql" "extra" .Values.postgresql.labels) | nindent 8 }}
+      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.postgresql.annotations)) }}
+      annotations:
+        {{- nindent 8 . }}
+      {{- end }}
     spec:
       securityContext:
         runAsUser: 999
@@ -129,6 +134,12 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
+        labels:
+          {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "postgresql" "extra" .Values.postgresql.labels) | nindent 10 }}
+        {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.postgresql.annotations)) }}
+        annotations:
+          {{- nindent 10 . }}
+        {{- end }}
       spec:
         accessModes:
           - ReadWriteOnce

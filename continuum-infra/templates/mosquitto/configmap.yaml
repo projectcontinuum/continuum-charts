@@ -4,8 +4,11 @@ kind: ConfigMap
 metadata:
   name: {{ include "continuum-infra.mosquitto.fullname" . }}-config
   labels:
-    app.kubernetes.io/component: mosquitto
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 data:
   mosquitto.conf: |
     persistence {{ .Values.mosquitto.config.persistence }}

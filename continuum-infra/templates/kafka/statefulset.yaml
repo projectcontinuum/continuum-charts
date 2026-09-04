@@ -4,8 +4,11 @@ kind: StatefulSet
 metadata:
   name: {{ include "continuum-infra.kafka.fullname" . }}
   labels:
-    app.kubernetes.io/component: kafka
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   serviceName: {{ include "continuum-infra.kafka.fullname" . }}-headless
   replicas: {{ .Values.kafka.replicas }}
@@ -17,9 +20,11 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: kafka
-        {{- include "continuum-infra.selectorLabels" . | nindent 8 }}
-        {{- include "continuum-infra.labels" . | nindent 8 }}
+        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels) | nindent 8 }}
+      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations)) }}
+      annotations:
+        {{- nindent 8 . }}
+      {{- end }}
     spec:
       securityContext:
         fsGroup: 1000
@@ -147,6 +152,12 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
+        labels:
+          {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels) | nindent 10 }}
+        {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations)) }}
+        annotations:
+          {{- nindent 10 . }}
+        {{- end }}
       spec:
         accessModes:
           - ReadWriteOnce

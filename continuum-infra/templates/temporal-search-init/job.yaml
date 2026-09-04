@@ -1,15 +1,16 @@
 {{- if .Values.temporalSearchInit.enabled }}
+{{- $hookAnnotations := dict "helm.sh/hook" "post-install,post-upgrade" "helm.sh/hook-weight" "10" "helm.sh/hook-delete-policy" "before-hook-creation" }}
+{{- $jobAnnotations := dict }}
+{{- $jobAnnotations = mergeOverwrite $jobAnnotations (.Values.temporalSearchInit.annotations | default dict) }}
+{{- $jobAnnotations = mergeOverwrite $jobAnnotations $hookAnnotations }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "continuum-infra.fullname" . }}-temporal-search-init
   labels:
-    app.kubernetes.io/component: temporal-search-init
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "temporal-search-init" "extra" .Values.temporalSearchInit.labels) | nindent 4 }}
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "10"
-    "helm.sh/hook-delete-policy": before-hook-creation
+    {{- include "continuum-infra.componentAnnotations" (dict "context" $ "extra" $jobAnnotations) | nindent 4 }}
 spec:
   ttlSecondsAfterFinished: 300
   backoffLimit: {{ .Values.temporalSearchInit.backoffLimit | default 5 }}
@@ -17,8 +18,11 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: temporal-search-init
-        {{- include "continuum-infra.selectorLabels" . | nindent 8 }}
+        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "temporal-search-init" "extra" .Values.temporalSearchInit.labels) | nindent 8 }}
+      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.temporalSearchInit.annotations)) }}
+      annotations:
+        {{- nindent 8 . }}
+      {{- end }}
     spec:
       restartPolicy: OnFailure
       securityContext:
