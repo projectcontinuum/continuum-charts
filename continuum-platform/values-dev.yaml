@@ -58,7 +58,7 @@ messageBridge:
 clusterManager:
   replicas: 1
   workbench:
-    namespace: continuum-workbench-dev
+    namespace: continuum-dev
     defaultImage: projectcontinuum/continuum-workbench:0.0.5
     imagePullPolicy: Always
   resources:
