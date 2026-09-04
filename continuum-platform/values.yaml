@@ -169,6 +169,21 @@ clusterManager:
   affinity: {}
 
 # ============================================================
+# NetworkPolicy - workbench isolation
+# ============================================================
+networkPolicy:
+  workbenchIsolation:
+    enabled: true
+    # CIDR ranges considered "internal" to the cluster (pod network + service network).
+    # MUST be overridden per cluster - these are placeholders and will NOT match every setup.
+    clusterInternalCIDRs:
+      - "10.0.0.0/8"
+    dns:
+      namespace: kube-system
+      podSelector:
+        k8s-app: kube-dns
+
+# ============================================================
 # continuum-credentials-server
 # ============================================================
 credentialsServer:

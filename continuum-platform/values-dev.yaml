@@ -69,6 +69,14 @@ clusterManager:
       cpu: 500m
       memory: 512Mi
 
+networkPolicy:
+  workbenchIsolation:
+    # TODO: replace with the actual pod network + service network CIDR(s) of the dev cluster
+    # (minikube/kind/etc.) - the default in values.yaml is a placeholder and will not match
+    # every setup.
+    clusterInternalCIDRs:
+      - "10.0.0.0/8"
+
 credentialsServer:
   replicas: 1
   encryption:
