@@ -4,8 +4,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "continuum-infra.mosquitto.fullname" . }}-data
   labels:
-    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels) | nindent 4 }}
-  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations)) }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels.pvc) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations.pvc)) }}
   annotations:
     {{- nindent 4 . }}
   {{- end }}
@@ -24,8 +24,8 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "continuum-infra.mosquitto.fullname" . }}-log
   labels:
-    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels) | nindent 4 }}
-  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations)) }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels.pvc) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations.pvc)) }}
   annotations:
     {{- nindent 4 . }}
   {{- end }}

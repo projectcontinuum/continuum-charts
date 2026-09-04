@@ -4,8 +4,8 @@ kind: Deployment
 metadata:
   name: {{ include "continuum-infra.mosquitto.fullname" . }}
   labels:
-    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels) | nindent 4 }}
-  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations)) }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels.deployment) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations.deployment)) }}
   annotations:
     {{- nindent 4 . }}
   {{- end }}
@@ -20,8 +20,8 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels) | nindent 8 }}
-      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations)) }}
+        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels.pod) | nindent 8 }}
+      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations.pod)) }}
       annotations:
         {{- nindent 8 . }}
       {{- end }}

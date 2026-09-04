@@ -4,8 +4,8 @@ kind: ConfigMap
 metadata:
   name: {{ include "continuum-infra.postgresql.fullname" . }}-init
   labels:
-    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "postgresql" "extra" .Values.postgresql.labels) | nindent 4 }}
-  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.postgresql.annotations)) }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "postgresql" "extra" .Values.postgresql.labels.configMap) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.postgresql.annotations.configMap)) }}
   annotations:
     {{- nindent 4 . }}
   {{- end }}

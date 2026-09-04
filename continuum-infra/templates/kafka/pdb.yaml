@@ -4,8 +4,8 @@ kind: PodDisruptionBudget
 metadata:
   name: {{ include "continuum-infra.kafka.fullname" . }}
   labels:
-    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels) | nindent 4 }}
-  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations)) }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels.pdb) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations.pdb)) }}
   annotations:
     {{- nindent 4 . }}
   {{- end }}

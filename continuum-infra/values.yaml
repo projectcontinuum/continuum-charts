@@ -108,10 +108,21 @@ postgresql:
   affinity: {}
 
   # ---- Extra metadata ---------------------------------------------------------
-  # Merged on top of global.labels/global.annotations for every resource this
-  # component creates (StatefulSet, Service, Secret, ConfigMap, Pods, PVC).
-  labels: {}
-  annotations: {}
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it. No `pvc`
+  # slot — StatefulSet volumeClaimTemplates are immutable after creation.
+  labels:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    secret: {}
+    configMap: {}
+  annotations:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    secret: {}
+    configMap: {}
 
 # =============================================================================
 # Cassandra — Temporal persistence backend  (Bitnami subchart)
@@ -363,11 +374,16 @@ temporalSearchInit:
       type: Keyword
 
   # ---- Extra metadata ---------------------------------------------------------
-  # Merged on top of global.labels/global.annotations. Note: the Job already
-  # carries its own hardcoded helm.sh/hook* annotations, which always win over
-  # these if there's a key collision.
-  labels: {}
-  annotations: {}
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Note: the Job already carries its own
+  # hardcoded helm.sh/hook* annotations, which always win over
+  # annotations.job if there's a key collision.
+  labels:
+    job: {}
+    pod: {}
+  annotations:
+    job: {}
+    pod: {}
 
 # =============================================================================
 # Kafka (KRaft mode — no ZooKeeper)
@@ -424,10 +440,21 @@ kafka:
   tolerations: []
 
   # ---- Extra metadata ---------------------------------------------------------
-  # Merged on top of global.labels/global.annotations for every resource this
-  # component creates (StatefulSet, Service, Service (headless), PDB, Pods, PVC).
-  labels: {}
-  annotations: {}
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it. No `pvc`
+  # slot — StatefulSet volumeClaimTemplates are immutable after creation.
+  labels:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    serviceHeadless: {}
+    pdb: {}
+  annotations:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    serviceHeadless: {}
+    pdb: {}
 
 # =============================================================================
 # Schema Registry — Confluent Schema Registry for Kafka
@@ -458,10 +485,16 @@ schemaRegistry:
     port: 8080
 
   # ---- Extra metadata ---------------------------------------------------------
-  # Merged on top of global.labels/global.annotations for every resource this
-  # component creates (Deployment, Service, Pods).
-  labels: {}
-  annotations: {}
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it.
+  labels:
+    deployment: {}
+    pod: {}
+    service: {}
+  annotations:
+    deployment: {}
+    pod: {}
+    service: {}
 
 # =============================================================================
 # Kafka UI — browser-based cluster inspection tool
@@ -485,10 +518,16 @@ kafkaUi:
       memory: 512Mi
 
   # ---- Extra metadata ---------------------------------------------------------
-  # Merged on top of global.labels/global.annotations for every resource this
-  # component creates (Deployment, Service, Pods).
-  labels: {}
-  annotations: {}
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it.
+  labels:
+    deployment: {}
+    pod: {}
+    service: {}
+  annotations:
+    deployment: {}
+    pod: {}
+    service: {}
 
 # =============================================================================
 # Mosquitto — lightweight MQTT broker
@@ -532,10 +571,21 @@ mosquitto:
       memory: 128Mi
 
   # ---- Extra metadata ---------------------------------------------------------
-  # Merged on top of global.labels/global.annotations for every resource this
-  # component creates (Deployment, Service, ConfigMap, Pods, PVCs).
-  labels: {}
-  annotations: {}
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it. `pvc`
+  # applies to both the data and log PVCs (standalone, mutable resources).
+  labels:
+    deployment: {}
+    pod: {}
+    service: {}
+    configMap: {}
+    pvc: {}
+  annotations:
+    deployment: {}
+    pod: {}
+    service: {}
+    configMap: {}
+    pvc: {}
 
 # =============================================================================
 # MinIO — S3-compatible object storage
@@ -577,7 +627,16 @@ minio:
   tolerations: []
 
   # ---- Extra metadata ---------------------------------------------------------
-  # Merged on top of global.labels/global.annotations for every resource this
-  # component creates (StatefulSet, Service, Secret, Pods, PVC).
-  labels: {}
-  annotations: {}
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it. No `pvc`
+  # slot — StatefulSet volumeClaimTemplates are immutable after creation.
+  labels:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    secret: {}
+  annotations:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    secret: {}

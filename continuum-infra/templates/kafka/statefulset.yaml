@@ -4,8 +4,8 @@ kind: StatefulSet
 metadata:
   name: {{ include "continuum-infra.kafka.fullname" . }}
   labels:
-    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels) | nindent 4 }}
-  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations)) }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels.statefulSet) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations.statefulSet)) }}
   annotations:
     {{- nindent 4 . }}
   {{- end }}
@@ -20,8 +20,8 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels) | nindent 8 }}
-      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations)) }}
+        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels.pod) | nindent 8 }}
+      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations.pod)) }}
       annotations:
         {{- nindent 8 . }}
       {{- end }}
@@ -152,12 +152,6 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
-        labels:
-          {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels) | nindent 10 }}
-        {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations)) }}
-        annotations:
-          {{- nindent 10 . }}
-        {{- end }}
       spec:
         accessModes:
           - ReadWriteOnce
