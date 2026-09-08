@@ -69,11 +69,11 @@ spec:
             failureThreshold: 6
           resources:
             {{- toYaml .Values.kafkaUi.resources | nindent 12 }}
-      {{- with .Values.kafkaUi.nodeSelector }}
+      {{- with (.Values.kafkaUi.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.kafkaUi.tolerations }}
+      {{- with (.Values.kafkaUi.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

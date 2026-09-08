@@ -141,11 +141,11 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/kafka/data
-      {{- with .Values.kafka.nodeSelector }}
+      {{- with (.Values.kafka.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.kafka.tolerations }}
+      {{- with (.Values.kafka.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

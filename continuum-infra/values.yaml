@@ -46,6 +46,16 @@ global:
   # Same subchart caveat as `labels` above applies.
   annotations: {}
 
+  # Default nodeSelector applied to every pod created by this chart's own
+  # templates.  A non-empty per-component nodeSelector overrides this.
+  # Same subchart caveat as `labels` above applies.
+  nodeSelector: {}
+
+  # Default tolerations applied to every pod created by this chart's own
+  # templates.  A non-empty per-component tolerations list overrides this.
+  # Same subchart caveat as `labels` above applies.
+  tolerations: []
+
 # =============================================================================
 # PostgreSQL — application database
 # =============================================================================

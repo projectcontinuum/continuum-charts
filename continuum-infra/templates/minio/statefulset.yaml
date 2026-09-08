@@ -94,11 +94,11 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
-      {{- with .Values.minio.nodeSelector }}
+      {{- with (.Values.minio.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.minio.tolerations }}
+      {{- with (.Values.minio.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

@@ -119,11 +119,11 @@ spec:
           configMap:
             name: {{ include "continuum-infra.postgresql.fullname" . }}-init
             defaultMode: 0755
-      {{- with .Values.postgresql.nodeSelector }}
+      {{- with (.Values.postgresql.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.postgresql.tolerations }}
+      {{- with (.Values.postgresql.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

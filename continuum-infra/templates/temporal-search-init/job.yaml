@@ -70,11 +70,11 @@ spec:
               temporal operator search-attribute create --namespace default --name {{ .name | quote }} --type {{ .type }} || true
               {{- end }}
               echo "Search attributes created successfully!"
-      {{- with .Values.temporalSearchInit.nodeSelector }}
+      {{- with (.Values.temporalSearchInit.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.temporalSearchInit.tolerations }}
+      {{- with (.Values.temporalSearchInit.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

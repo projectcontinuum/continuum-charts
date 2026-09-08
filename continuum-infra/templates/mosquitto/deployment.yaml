@@ -86,11 +86,11 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "continuum-infra.mosquitto.fullname" . }}-log
         {{- end }}
-      {{- with .Values.mosquitto.nodeSelector }}
+      {{- with (.Values.mosquitto.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.mosquitto.tolerations }}
+      {{- with (.Values.mosquitto.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
