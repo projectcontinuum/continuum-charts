@@ -74,4 +74,12 @@ spec:
             failureThreshold: 10
           resources:
             {{- toYaml .Values.schemaRegistry.resources | nindent 12 }}
+      {{- with .Values.schemaRegistry.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.schemaRegistry.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 {{- end }}

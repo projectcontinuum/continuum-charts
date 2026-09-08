@@ -373,6 +373,10 @@ temporalSearchInit:
     - name: "Continuum:WorkflowFileName"
       type: Keyword
 
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+
   # ---- Extra metadata ---------------------------------------------------------
   # Merged on top of global.labels/global.annotations, one slot per resource
   # kind this component creates. Note: the Job already carries its own
@@ -484,6 +488,10 @@ schemaRegistry:
   service:
     port: 8080
 
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+
   # ---- Extra metadata ---------------------------------------------------------
   # Merged on top of global.labels/global.annotations, one slot per resource
   # kind this component creates. Leave any slot empty ({}) to skip it.
@@ -516,6 +524,10 @@ kafkaUi:
     limits:
       cpu: 500m
       memory: 512Mi
+
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
 
   # ---- Extra metadata ---------------------------------------------------------
   # Merged on top of global.labels/global.annotations, one slot per resource
@@ -569,6 +581,10 @@ mosquitto:
     limits:
       cpu: 200m
       memory: 128Mi
+
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
 
   # ---- Extra metadata ---------------------------------------------------------
   # Merged on top of global.labels/global.annotations, one slot per resource
