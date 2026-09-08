@@ -94,11 +94,11 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.clusterManager.resources | nindent 12 }}
-      {{- with .Values.clusterManager.nodeSelector }}
+      {{- with (.Values.clusterManager.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.clusterManager.tolerations }}
+      {{- with (.Values.clusterManager.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

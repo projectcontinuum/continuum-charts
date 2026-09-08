@@ -96,11 +96,11 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.credentialsServer.resources | nindent 12 }}
-      {{- with .Values.credentialsServer.nodeSelector }}
+      {{- with (.Values.credentialsServer.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.credentialsServer.tolerations }}
+      {{- with (.Values.credentialsServer.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

@@ -118,11 +118,11 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.orchestrationService.resources | nindent 12 }}
-      {{- with .Values.orchestrationService.nodeSelector }}
+      {{- with (.Values.orchestrationService.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.orchestrationService.tolerations }}
+      {{- with (.Values.orchestrationService.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

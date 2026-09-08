@@ -151,11 +151,11 @@ spec:
         - name: cache-storage
           persistentVolumeClaim:
             claimName: {{ include "continuum-platform.api-server.fullname" . }}-cache
-      {{- with .Values.apiServer.nodeSelector }}
+      {{- with (.Values.apiServer.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.apiServer.tolerations }}
+      {{- with (.Values.apiServer.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
