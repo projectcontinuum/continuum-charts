@@ -73,6 +73,18 @@ spec:
               value: {{ .Values.clusterManager.workbench.namespace | quote }}
             - name: WORKBENCH_IMAGE_PULL_POLICY
               value: {{ .Values.clusterManager.workbench.imagePullPolicy | default "IfNotPresent" | quote }}
+            {{- if .Values.clusterManager.overlays.enabled }}
+            - name: OVERLAY_ENABLED
+              value: "true"
+            - name: OVERLAY_PATH
+              value: "/etc/continuum/overlays"
+            {{- end }}
+          {{- if .Values.clusterManager.overlays.enabled }}
+          volumeMounts:
+            - name: overlays
+              mountPath: /etc/continuum/overlays
+              readOnly: true
+          {{- end }}
           startupProbe:
             httpGet:
               path: /actuator/health
@@ -94,6 +106,12 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.clusterManager.resources | nindent 12 }}
+      {{- if .Values.clusterManager.overlays.enabled }}
+      volumes:
+        - name: overlays
+          configMap:
+            name: {{ include "continuum-platform.cluster-manager.fullname" . }}-overlays
+      {{- end }}
       {{- with (.Values.clusterManager.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -4,7 +4,7 @@
 global:
   imagePullPolicy: IfNotPresent
   imagePullSecrets: []
-  continuumPlatformVersion: "0.0.15"
+  continuumPlatformVersion: "0.0.17"
 
   # Default nodeSelector applied to every pod in this chart.
   # A non-empty per-component nodeSelector overrides this.
@@ -175,6 +175,32 @@ clusterManager:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # K8s resource overlays — customize workbench Deployment, Service, and PVC manifests
+  # Overlay YAML is deep-merged onto the rendered base: objects merge recursively,
+  # arrays and scalars replace. Critical identity fields (name, namespace, lifecycle
+  # labels) are protected and cannot be overridden.
+  overlays:
+    enabled: false
+    files: {}
+    # Example — add GPU tolerations and node selectors to all workbench pods:
+    # files:
+    #   deployment.yaml: |
+    #     spec:
+    #       template:
+    #         spec:
+    #           tolerations:
+    #             - key: "nvidia.com/gpu"
+    #               operator: "Exists"
+    #               effect: "NoSchedule"
+    #           nodeSelector:
+    #             accelerator: nvidia-tesla-v100
+    #   service.yaml: |
+    #     metadata:
+    #       annotations:
+    #         service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+    #   pvc.yaml: |
+    #     spec:
+    #       storageClassName: fast-ssd
 
 # ============================================================
 # NetworkPolicy - workbench isolation
