@@ -58,7 +58,7 @@ messageBridge:
 clusterManager:
   replicas: 1
   workbench:
-    namespace: continuum-workbench-dev
+    namespace: continuum-dev
     defaultImage: projectcontinuum/continuum-workbench:0.0.5
     imagePullPolicy: Always
   resources:
@@ -68,6 +68,14 @@ clusterManager:
     limits:
       cpu: 500m
       memory: 512Mi
+
+networkPolicy:
+  workbenchIsolation:
+    # TODO: replace with the actual pod network + service network CIDR(s) of the dev cluster
+    # (minikube/kind/etc.) - the default in values.yaml is a placeholder and will not match
+    # every setup.
+    clusterInternalCIDRs:
+      - "10.0.0.0/8"
 
 credentialsServer:
   replicas: 1

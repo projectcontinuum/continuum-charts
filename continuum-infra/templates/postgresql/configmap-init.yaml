@@ -4,8 +4,11 @@ kind: ConfigMap
 metadata:
   name: {{ include "continuum-infra.postgresql.fullname" . }}-init
   labels:
-    app.kubernetes.io/component: postgresql
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "postgresql" "extra" .Values.postgresql.labels.configMap) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.postgresql.annotations.configMap)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 data:
   init-continuum-db.sh: |
     #!/bin/bash

@@ -139,11 +139,11 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.cloudGateway.resources | nindent 12 }}
-      {{- with .Values.cloudGateway.nodeSelector }}
+      {{- with (.Values.cloudGateway.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.cloudGateway.tolerations }}
+      {{- with (.Values.cloudGateway.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

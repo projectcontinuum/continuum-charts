@@ -124,11 +124,11 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.messageBridge.resources | nindent 12 }}
-      {{- with .Values.messageBridge.nodeSelector }}
+      {{- with (.Values.messageBridge.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.messageBridge.tolerations }}
+      {{- with (.Values.messageBridge.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

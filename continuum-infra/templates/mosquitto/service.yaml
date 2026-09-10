@@ -4,8 +4,11 @@ kind: Service
 metadata:
   name: {{ include "continuum-infra.mosquitto.fullname" . }}
   labels:
-    app.kubernetes.io/component: mosquitto
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels.service) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations.service)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   type: ClusterIP
   ports:

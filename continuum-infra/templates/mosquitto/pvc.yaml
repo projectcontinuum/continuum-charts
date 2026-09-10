@@ -4,8 +4,11 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "continuum-infra.mosquitto.fullname" . }}-data
   labels:
-    app.kubernetes.io/component: mosquitto
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels.pvc) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations.pvc)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -21,8 +24,11 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "continuum-infra.mosquitto.fullname" . }}-log
   labels:
-    app.kubernetes.io/component: mosquitto
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "mosquitto" "extra" .Values.mosquitto.labels.pvc) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.mosquitto.annotations.pvc)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce

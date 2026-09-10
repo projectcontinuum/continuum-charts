@@ -39,6 +39,39 @@ Selector labels for a given component
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
+{{/*
+Full label set for a resource belonging to a given component, with global and
+per-service overrides layered on top.
+Merge precedence (highest wins): extra > global.labels > component + base labels.
+Usage: {{ include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels) | nindent 4 }}
+*/}}
+{{- define "continuum-infra.componentLabels" -}}
+{{- $result := dict -}}
+{{- $result = mergeOverwrite $result (dict "app.kubernetes.io/component" .component) -}}
+{{- $result = mergeOverwrite $result (include "continuum-infra.labels" .context | fromYaml) -}}
+{{- $result = mergeOverwrite $result (.context.Values.global.labels | default dict) -}}
+{{- $result = mergeOverwrite $result (.extra | default dict) -}}
+{{- toYaml $result -}}
+{{- end }}
+
+{{/*
+Full annotation set for a resource, with global and per-service overrides
+layered on top. Renders to nothing if there are no annotations to set.
+Merge precedence (highest wins): extra > global.annotations.
+Usage: {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations)) }}
+annotations:
+  {{- nindent 4 . }}
+{{- end }}
+*/}}
+{{- define "continuum-infra.componentAnnotations" -}}
+{{- $result := dict -}}
+{{- $result = mergeOverwrite $result (.context.Values.global.annotations | default dict) -}}
+{{- $result = mergeOverwrite $result (.extra | default dict) -}}
+{{- if $result -}}
+{{ toYaml $result }}
+{{- end -}}
+{{- end }}
+
 {{/* ======================== Component fullnames ======================== */}}
 
 {{- define "continuum-infra.postgresql.fullname" -}}

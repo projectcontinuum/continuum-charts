@@ -6,6 +6,14 @@ global:
   imagePullSecrets: []
   continuumPlatformVersion: "0.0.15"
 
+  # Default nodeSelector applied to every pod in this chart.
+  # A non-empty per-component nodeSelector overrides this.
+  nodeSelector: {}
+
+  # Default tolerations applied to every pod in this chart.
+  # A non-empty per-component tolerations list overrides this.
+  tolerations: []
+
 # ============================================================
 # Infrastructure service references
 # These MUST match the release name and service names from continuum-infra
@@ -167,6 +175,21 @@ clusterManager:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+
+# ============================================================
+# NetworkPolicy - workbench isolation
+# ============================================================
+networkPolicy:
+  workbenchIsolation:
+    enabled: true
+    # CIDR ranges considered "internal" to the cluster (pod network + service network).
+    # MUST be overridden per cluster - these are placeholders and will NOT match every setup.
+    clusterInternalCIDRs:
+      - "10.0.0.0/8"
+    dns:
+      namespace: kube-system
+      podSelector:
+        k8s-app: kube-dns
 
 # ============================================================
 # continuum-credentials-server

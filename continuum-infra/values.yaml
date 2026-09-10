@@ -32,6 +32,30 @@ global:
   #     - name: my-registry-secret
   imagePullSecrets: []
 
+  # Labels applied to every resource created directly by this chart's own
+  # templates (postgresql, kafka, kafkaUi, schemaRegistry, mosquitto, minio,
+  # temporalSearchInit), merged underneath each component's own `labels`.
+  # NOTE: because Helm does not template values.yaml, this does NOT
+  # automatically propagate into the cassandra/elasticsearch/temporal
+  # subcharts below — mirror it into their own commonLabels/additionalLabels
+  # fields if you want the same labels there.
+  labels: {}
+
+  # Annotations applied to every resource created directly by this chart's
+  # own templates, merged underneath each component's own `annotations`.
+  # Same subchart caveat as `labels` above applies.
+  annotations: {}
+
+  # Default nodeSelector applied to every pod created by this chart's own
+  # templates.  A non-empty per-component nodeSelector overrides this.
+  # Same subchart caveat as `labels` above applies.
+  nodeSelector: {}
+
+  # Default tolerations applied to every pod created by this chart's own
+  # templates.  A non-empty per-component tolerations list overrides this.
+  # Same subchart caveat as `labels` above applies.
+  tolerations: []
+
 # =============================================================================
 # PostgreSQL — application database
 # =============================================================================
@@ -93,12 +117,37 @@ postgresql:
   tolerations: []
   affinity: {}
 
+  # ---- Extra metadata ---------------------------------------------------------
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it. No `pvc`
+  # slot — StatefulSet volumeClaimTemplates are immutable after creation.
+  labels:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    secret: {}
+    configMap: {}
+  annotations:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    secret: {}
+    configMap: {}
+
 # =============================================================================
 # Cassandra — Temporal persistence backend  (Bitnami subchart)
 # =============================================================================
 # Values are passed through to the Bitnami Cassandra subchart.
 # See https://github.com/bitnami/charts/tree/main/bitnami/cassandra
 # for the full set of tunables.
+#
+# This subchart has its own native labels/annotations fields — set them
+# directly (values.yaml is not templated, so global.labels/global.annotations
+# above cannot be auto-injected here):
+#   commonLabels: {}        # applied to every Cassandra resource
+#   commonAnnotations: {}   # applied to every Cassandra resource
+#   podLabels: {}           # pods only
+#   podAnnotations: {}      # pods only
 # -----------------------------------------------------------------------------
 cassandra:
   enabled: true
@@ -138,6 +187,12 @@ cassandra:
 # Values are passed through to the Bitnami Elasticsearch subchart.
 # See https://github.com/bitnami/charts/tree/main/bitnami/elasticsearch
 # for the full set of tunables.
+#
+# This subchart has its own native labels/annotations fields — set them
+# directly (values.yaml is not templated, so global.labels/global.annotations
+# above cannot be auto-injected here):
+#   commonLabels: {}        # applied to every Elasticsearch resource
+#   commonAnnotations: {}   # applied to every Elasticsearch resource
 # -----------------------------------------------------------------------------
 elasticsearch:
   enabled: true
@@ -177,6 +232,14 @@ elasticsearch:
 # =============================================================================
 # Values are passed through to the official Temporal Helm chart.
 # See https://github.com/temporalio/helm-charts for the full reference.
+#
+# This subchart has its own native labels/annotations fields — set them
+# directly (values.yaml is not templated, so global.labels/global.annotations
+# above cannot be auto-injected here):
+#   additionalLabels: {}      # applied to every Temporal resource/pod
+#   additionalAnnotations: {} # applied to every Temporal resource/pod
+# Per-component overrides also exist, e.g. server.frontend.podLabels /
+# podAnnotations / annotations, server.history.podLabels, etc.
 # -----------------------------------------------------------------------------
 temporal:
   enabled: true
@@ -320,6 +383,22 @@ temporalSearchInit:
     - name: "Continuum:WorkflowFileName"
       type: Keyword
 
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+
+  # ---- Extra metadata ---------------------------------------------------------
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Note: the Job already carries its own
+  # hardcoded helm.sh/hook* annotations, which always win over
+  # annotations.job if there's a key collision.
+  labels:
+    job: {}
+    pod: {}
+  annotations:
+    job: {}
+    pod: {}
+
 # =============================================================================
 # Kafka (KRaft mode — no ZooKeeper)
 # =============================================================================
@@ -374,6 +453,23 @@ kafka:
   nodeSelector: {}
   tolerations: []
 
+  # ---- Extra metadata ---------------------------------------------------------
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it. No `pvc`
+  # slot — StatefulSet volumeClaimTemplates are immutable after creation.
+  labels:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    serviceHeadless: {}
+    pdb: {}
+  annotations:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    serviceHeadless: {}
+    pdb: {}
+
 # =============================================================================
 # Schema Registry — Confluent Schema Registry for Kafka
 # =============================================================================
@@ -402,6 +498,22 @@ schemaRegistry:
   service:
     port: 8080
 
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+
+  # ---- Extra metadata ---------------------------------------------------------
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it.
+  labels:
+    deployment: {}
+    pod: {}
+    service: {}
+  annotations:
+    deployment: {}
+    pod: {}
+    service: {}
+
 # =============================================================================
 # Kafka UI — browser-based cluster inspection tool
 # =============================================================================
@@ -422,6 +534,22 @@ kafkaUi:
     limits:
       cpu: 500m
       memory: 512Mi
+
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+
+  # ---- Extra metadata ---------------------------------------------------------
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it.
+  labels:
+    deployment: {}
+    pod: {}
+    service: {}
+  annotations:
+    deployment: {}
+    pod: {}
+    service: {}
 
 # =============================================================================
 # Mosquitto — lightweight MQTT broker
@@ -464,6 +592,27 @@ mosquitto:
       cpu: 200m
       memory: 128Mi
 
+  # ---- Scheduling -----------------------------------------------------------
+  nodeSelector: {}
+  tolerations: []
+
+  # ---- Extra metadata ---------------------------------------------------------
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it. `pvc`
+  # applies to both the data and log PVCs (standalone, mutable resources).
+  labels:
+    deployment: {}
+    pod: {}
+    service: {}
+    configMap: {}
+    pvc: {}
+  annotations:
+    deployment: {}
+    pod: {}
+    service: {}
+    configMap: {}
+    pvc: {}
+
 # =============================================================================
 # MinIO — S3-compatible object storage
 # =============================================================================
@@ -503,4 +652,17 @@ minio:
   nodeSelector: {}
   tolerations: []
 
-
+  # ---- Extra metadata ---------------------------------------------------------
+  # Merged on top of global.labels/global.annotations, one slot per resource
+  # kind this component creates. Leave any slot empty ({}) to skip it. No `pvc`
+  # slot — StatefulSet volumeClaimTemplates are immutable after creation.
+  labels:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    secret: {}
+  annotations:
+    statefulSet: {}
+    pod: {}
+    service: {}
+    secret: {}

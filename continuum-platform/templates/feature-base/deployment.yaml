@@ -155,11 +155,11 @@ spec:
         - name: cache-storage
           persistentVolumeClaim:
             claimName: {{ include "continuum-platform.feature-base.fullname" . }}-cache
-      {{- with .Values.featureBase.nodeSelector }}
+      {{- with (.Values.featureBase.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.featureBase.tolerations }}
+      {{- with (.Values.featureBase.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

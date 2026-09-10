@@ -4,8 +4,11 @@ kind: Deployment
 metadata:
   name: {{ include "continuum-infra.schema-registry.fullname" . }}
   labels:
-    app.kubernetes.io/component: schema-registry
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "schema-registry" "extra" .Values.schemaRegistry.labels.deployment) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.schemaRegistry.annotations.deployment)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   replicas: {{ .Values.schemaRegistry.replicas | default 1 }}
   selector:
@@ -15,9 +18,11 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: schema-registry
-        {{- include "continuum-infra.selectorLabels" . | nindent 8 }}
-        {{- include "continuum-infra.labels" . | nindent 8 }}
+        {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "schema-registry" "extra" .Values.schemaRegistry.labels.pod) | nindent 8 }}
+      {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.schemaRegistry.annotations.pod)) }}
+      annotations:
+        {{- nindent 8 . }}
+      {{- end }}
     spec:
       securityContext:
         runAsNonRoot: true
@@ -69,4 +74,12 @@ spec:
             failureThreshold: 10
           resources:
             {{- toYaml .Values.schemaRegistry.resources | nindent 12 }}
+      {{- with (.Values.schemaRegistry.nodeSelector | default .Values.global.nodeSelector) }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (.Values.schemaRegistry.tolerations | default .Values.global.tolerations) }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 {{- end }}

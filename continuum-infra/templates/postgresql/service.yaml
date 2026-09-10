@@ -4,8 +4,11 @@ kind: Service
 metadata:
   name: {{ include "continuum-infra.postgresql.fullname" . }}
   labels:
-    app.kubernetes.io/component: postgresql
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "postgresql" "extra" .Values.postgresql.labels.service) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.postgresql.annotations.service)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   type: ClusterIP
   ports:

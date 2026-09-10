@@ -155,11 +155,11 @@ spec:
         - name: cache-storage
           persistentVolumeClaim:
             claimName: {{ include "continuum-platform.feature-cheminformatics.fullname" . }}-cache
-      {{- with .Values.featureCheminformatics.nodeSelector }}
+      {{- with (.Values.featureCheminformatics.nodeSelector | default .Values.global.nodeSelector) }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.featureCheminformatics.tolerations }}
+      {{- with (.Values.featureCheminformatics.tolerations | default .Values.global.tolerations) }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

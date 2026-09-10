@@ -4,8 +4,11 @@ kind: Service
 metadata:
   name: {{ include "continuum-infra.kafka.fullname" . }}-headless
   labels:
-    app.kubernetes.io/component: kafka
-    {{- include "continuum-infra.labels" . | nindent 4 }}
+    {{- include "continuum-infra.componentLabels" (dict "context" $ "component" "kafka" "extra" .Values.kafka.labels.serviceHeadless) | nindent 4 }}
+  {{- with (include "continuum-infra.componentAnnotations" (dict "context" $ "extra" .Values.kafka.annotations.serviceHeadless)) }}
+  annotations:
+    {{- nindent 4 . }}
+  {{- end }}
 spec:
   type: ClusterIP
   clusterIP: None
