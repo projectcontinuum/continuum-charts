@@ -1,4 +1,4 @@
-{{- if .Values.clusterManager.overlays.enabled }}
+{{- if .Values.clusterManager.workbench.overlays.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,8 +7,10 @@ metadata:
     app.kubernetes.io/component: cluster-manager
     {{- include "continuum-platform.labels" . | nindent 4 }}
 data:
-  {{- range $key, $value := .Values.clusterManager.overlays.files }}
-  {{ $key }}: |
-    {{- $value | nindent 4 }}
+  {{- range $variant, $files := .Values.clusterManager.workbench.overlays.variants }}
+  {{- range $filename, $content := $files }}
+  {{ $variant }}--{{ $filename }}: |
+    {{- $content | nindent 4 }}
+  {{- end }}
   {{- end }}
 {{- end }}

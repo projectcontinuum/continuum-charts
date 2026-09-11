@@ -73,16 +73,16 @@ spec:
               value: {{ .Values.clusterManager.workbench.namespace | quote }}
             - name: WORKBENCH_IMAGE_PULL_POLICY
               value: {{ .Values.clusterManager.workbench.imagePullPolicy | default "IfNotPresent" | quote }}
-            {{- if .Values.clusterManager.overlays.enabled }}
+            {{- if .Values.clusterManager.workbench.overlays.enabled }}
             - name: OVERLAY_ENABLED
               value: "true"
             - name: OVERLAY_PATH
-              value: "/etc/continuum/overlays"
+              value: "/etc/continuum/overlays/workbench"
             {{- end }}
-          {{- if .Values.clusterManager.overlays.enabled }}
+          {{- if .Values.clusterManager.workbench.overlays.enabled }}
           volumeMounts:
             - name: overlays
-              mountPath: /etc/continuum/overlays
+              mountPath: /etc/continuum/overlays/workbench
               readOnly: true
           {{- end }}
           startupProbe:
@@ -106,7 +106,7 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.clusterManager.resources | nindent 12 }}
-      {{- if .Values.clusterManager.overlays.enabled }}
+      {{- if .Values.clusterManager.workbench.overlays.enabled }}
       volumes:
         - name: overlays
           configMap:
