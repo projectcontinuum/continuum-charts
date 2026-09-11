@@ -39,6 +39,6 @@ rules:
   # Manage Ingress for workbench external access
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses"]
-    verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
+    verbs: ["create", "get", "list", "watch", "update", "patch", "delete", "deletecollection"]
 {{- end }}
 
