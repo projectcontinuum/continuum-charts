@@ -1,0 +1,16 @@
+{{- if and .Values.clusterManager.enabled .Values.clusterManager.workbench.middleware.enabled }}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: workbench-strip-context-path
+  namespace: {{ .Values.clusterManager.workbench.namespace }}
+  labels:
+    app.kubernetes.io/component: cluster-manager
+    {{- include "continuum-platform.labels" . | nindent 4 }}
+spec:
+  stripPrefix:
+    prefixes:
+      {{- range .Values.clusterManager.workbench.middleware.stripPrefixes }}
+      - {{ . | quote }}
+      {{- end }}
+{{- end }}

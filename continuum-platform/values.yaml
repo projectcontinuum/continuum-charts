@@ -174,6 +174,15 @@ clusterManager:
     # Overlay files are FreeMarker templates with access to: instanceId, namespace,
     # userId, image, imagePullPolicy, cpuRequest, cpuLimit, memoryRequest,
     # memoryLimit, storageSize, storageClassName.
+    # Traefik middleware for path stripping (requires traefik.io CRDs on the cluster)
+    middleware:
+      enabled: false
+      # Context-path prefixes to strip before forwarding to backends.
+      # Only paths starting with a listed prefix are affected;
+      # the workbench root (/) passes through unmodified.
+      stripPrefixes:
+        - /api-server
+        - /credentials-manager
     overlays:
       enabled: false
       variants: {}
