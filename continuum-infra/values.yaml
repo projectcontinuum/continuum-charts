@@ -85,7 +85,8 @@ postgresql:
     continuumDatabase: continuum
 
     # If set, the chart will use this existing Secret instead of creating one.
-    # The Secret must contain the keys: postgres-password, continuum-password.
+    # The Secret must contain the keys: postgres-password, continuum-db-user,
+    # continuum-db-password, continuum-db-name.
     existingSecret: ""
 
   # ---- Connection limits ----------------------------------------------------
